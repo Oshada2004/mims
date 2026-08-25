@@ -1,0 +1,38 @@
+services:
+  database:
+    image: mysql:8.0
+    container_name: mims_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db_data:/var/lib/mysql
+
+  backend:
+    build: ./backend
+    container_name: mims_backend
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5000:5000"
+    depends_on:
+      - database
+
+  frontend:
+    build: ./frontend
+    container_name: mims_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
