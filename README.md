@@ -18,7 +18,7 @@ provides a basic database connection check.
 	```
 
 2. Build and start the services:
-
+	run the docker desktop in the local machine 
 	```bash
 	docker compose up --build
 	```
