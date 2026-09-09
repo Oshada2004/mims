@@ -11,8 +11,26 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
       - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  flyway:
+    image: flyway/flyway:10
+    command: -connectRetries=60 migrate
+    environment:
+      FLYWAY_URL: jdbc:mysql://database:3306/${DB_NAME}?allowPublicKeyRetrieval=true&useSSL=false
+      FLYWAY_USER: ${DB_USER}
+      FLYWAY_PASSWORD: ${DB_PASSWORD}
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+    volumes:
+      - ./db/migrations:/flyway/sql:ro
+    depends_on:
+      database:
+        condition: service_healthy
 
   backend:
     build: ./backend
@@ -23,7 +41,8 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - database
+      flyway:
+        condition: service_completed_successfully
 
   frontend:
     build: ./frontend

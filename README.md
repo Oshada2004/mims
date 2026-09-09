@@ -23,7 +23,8 @@ provides a basic database connection check.
 	docker compose up --build
 	```
 
-3. Open http://localhost:3000. The backend test endpoint is
+3. Flyway automatically applies pending migrations from `db/migrations`.
+   Open http://localhost:3000. The backend test endpoint is
 	http://localhost:5000/api/test.
 
 To access the MySQL database from the running container:
@@ -35,12 +36,31 @@ To access the MySQL database from the running container:
 Stop the services with `docker compose down`. To also remove the database
 volume and reset the database, use `docker compose down -v`.
 
+## Database migrations
+
+Create a new migration for every schema change. Use the next version number
+and commit the file to Git, for example:
+
+```text
+db/migrations/V2__create_users.sql
+```
+
+Flyway runs pending migrations before the backend starts and records applied
+migrations in the `flyway_schema_history` table. Never edit a migration that
+has already been applied; add a new migration instead.
+
+To run migrations without starting the frontend and backend:
+
+```bash
+docker compose up database flyway
+```
+
 ## Folder Structure
 
 ```text
 mims/
 ├── backend/          # Express API and Dockerfile
-├── db/               # MySQL initialization script
+├── db/migrations/    # Versioned Flyway SQL migrations
 ├── frontend/         # React app and Dockerfile
 ├── docker-compose.yml
 └── README.md
