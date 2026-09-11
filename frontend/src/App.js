@@ -5,7 +5,9 @@ function App() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/test')
+    const apiUrl = process.env.REACT_APP_API_URL;
+
+    fetch(`${apiUrl}/api/test`)
       .then((res) => {
         if (!res.ok) throw new Error('Network error');
         return res.json();
