@@ -10,7 +10,7 @@ CREATE TABLE BANK_META_DATA(
     bank_start_time TIME NOT NULL,
     bank_close_time TIME NOT NULL,
     PRIMARY KEY(bank_id)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB;  
 
 CREATE TABLE BRANCH(
     branch_id INT NOT NULL AUTO_INCREMENT,
