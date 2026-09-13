@@ -1,6 +1,5 @@
 const db = require('./../config/db');
 
-// Function to fetch a person by ID along with their role
 async function getPersonById(personId) {
   try {
     const [rows] = await db.query(
