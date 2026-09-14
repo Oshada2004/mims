@@ -3,6 +3,7 @@ services:
     image: mysql:8.0
     container_name: mims_db
     restart: always
+    command: --log-bin-trust-function-creators=1
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}

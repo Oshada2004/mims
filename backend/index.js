@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const db = require('./src/config/db');
+const accountRoutes = require('./src/routes/accountRoutes');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/api/accounts', accountRoutes);
 
 app.get('/api/test', async (req, res) => {
   try {
