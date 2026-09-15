@@ -19,6 +19,7 @@ RETURN (
     WHERE account_no =p_account_no
 );
 
+
 DROP FUNCTION IF EXISTS get_fixed_deposit_by_id;
 
 CREATE FUNCTION get_fixed_deposit_by_id(p_fd_id VARCHAR(15))
@@ -36,5 +37,29 @@ RETURN (
         'status',status
     )
     FROM FIXED_DEPOSIT
-    WHERE fd_id = p_fd_id
+    WHERE fd_id=p_fd_id
+);
+
+DROP FUNCTION IF EXISTS get_accounts_by_person_id;
+
+CREATE FUNCTION get_accounts_by_person_id(p_person_id INT)
+RETURNS JSON
+READS SQL DATA
+RETURN (
+    SELECT COALESCE(
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'account_no',sa.account_no,
+                'plan_code',sa.plan_code,
+                'balance',sa.balance,
+                'status',sa.status,
+                'holder_role',ah.holder_role
+            )
+        ),
+        JSON_ARRAY()
+    )
+    FROM ACCOUNT_HOLDER ah
+    JOIN SAVINGS_ACCOUNT sa
+        ON sa.account_no = ah.account_no
+    WHERE ah.customer_person_id = p_person_id
 );
