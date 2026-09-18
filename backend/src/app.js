@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const db = require('./config/db');
 
 const authRoutes = require('./routes/authRoutes');
 // const staffRoutes = require('./routes/staffRoutes');
@@ -25,6 +26,8 @@ app.use('/api/v1/auth', authRoutes);
 // app.use('/api/v1/fd', fdRoutes);
 // app.use('/api/v1/jobs', jobRoutes);
 // app.use('/api/v1/reports', reportRoutes);
+
+
 
 // Global Centralized Error Handling Middleware
 app.use((err, req, res, next) => {

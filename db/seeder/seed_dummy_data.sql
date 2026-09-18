@@ -25,9 +25,9 @@ INSERT INTO SAV_ACC_PLAN VALUES
 ('JOINT',  'Joint Savings Plan',     7.00,  5000.00, 18, 150, TRUE);
 
 INSERT INTO FD_ACC_PLAN VALUES
-('FD6M',  6, 13.00),
-('FD1Y', 12, 14.00),
-('FD3Y', 36, 15.00);
+('6M',  6, 13.00),
+('1Y', 12, 14.00),
+('3Y', 36, 15.00);
 
 INSERT INTO BRANCH VALUES
 (1, 'Colombo Central Branch', 'Colombo', 'No. 12, Main Street, Pettah',   '0112345678', NOW()),
