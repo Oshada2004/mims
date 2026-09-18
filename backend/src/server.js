@@ -1,9 +1,8 @@
-/* Server file is the main backend file and it called the app file app file handling the routing */
-import app from './app.js';
+const app = require('./app');
+require('dotenv').config();
 
-//runnning in the port 3000 or defined in the env file 
-const PORT = process.env.PORT||3000;
+const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, ()=>{
-    console.log("Server is running on PORT: "+PORT);
-})
+app.listen(PORT, () => {
+    console.log(`MIMS Core Banking Service running on port ${PORT}`);
+});
