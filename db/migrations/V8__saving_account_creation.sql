@@ -1,6 +1,5 @@
 DROP PROCEDURE IF EXISTS sp_open_savings_account;
 
-ALTER TABLE SAVINGS_ACCOUNT ADD COLUMN Serial_no INT AUTO_INCREMENT UNIQUE FIRST;
 
 DELIMITER $$
 
@@ -16,7 +15,6 @@ BEGIN
     DECLARE v_dob DATE;
     DECLARE v_rate DECIMAL(5,2);
     DECLARE v_min_bal DECIMAL(12,2);
-    DECLARE v_serial INT
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -48,25 +46,26 @@ BEGIN
 
     START TRANSACTION;
 
+        SET p_account_no = CONCAT('SA', LPAD(FLOOR(RAND() * 999999999), 10, '0'));
+
         INSERT INTO SAVINGS_ACCOUNT (
             account_no, branch_id, agent_person_id, plan_code, opened_date,
             status, next_accrual_date, balance, daily_interest,
             contracted_interest_rate, contracted_min_balance,
             curr_accrual_cycle_no, last_txn_date
         ) VALUES (
-            UUID(), p_branch_id, p_agent_person_id, p_plan_code, CURDATE(),
+            p_account_no, p_branch_id, p_agent_person_id, p_plan_code, CURDATE(),
             'ACTIVE', DATE_ADD(CURDATE(), INTERVAL 30 DAY), p_initial_deposit, 0.00,
             v_rate, v_min_bal, 0, CURDATE()
         );
 
-        SET v_serial = LAST_INSERT_ID();
-
-        SET p_account_no = CONCAT('SA', LPAD(v_serial MOD 100000, 5, '0'), LPAD(FLOOR(RAND() * 99999), 5, '0'));
-        UPDATE SAVINGS_ACCOUNT SET account_no = p_account_no WHERE Serial_no = v_serial;
-
-        
+        IF p_plan_code != 'JOINT' THEN
         INSERT INTO ACCOUNT_HOLDER (account_no, customer_person_id, holder_role)
         VALUES (p_account_no, p_customer_id, 'PRIMARY');
+        ELSE
+        INSERT INTO ACCOUNT_HOLDER (account_no, customer_person_id, holder_role)
+        VALUES (p_account_no, p_customer_id, 'JOINT');
+        END IF;
 
         
         INSERT INTO TRANSACTION_LOG (
