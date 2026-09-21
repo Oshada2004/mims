@@ -1,5 +1,3 @@
-
-
 DELIMITER $$
 
 drop PROCEDURE if EXISTS sp_add_joint_holder$$
@@ -37,7 +35,7 @@ END IF;
 
 IF v_allows_joint IS NULL OR v_allows_joint=FALSE THEN
 SIGNAL SQLSTATE '45000' 
-SET MESSAGE_TEXT='Selected account plan does not permit joint ownership.';[cite: 2]
+SET MESSAGE_TEXT='Selected account plan does not permit joint ownership.';
 END IF;
 
 SELECT dob INTO v_dob FROM PERSON WHERE person_id=p_co_customer_id;
