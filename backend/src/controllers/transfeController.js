@@ -1,11 +1,11 @@
-const db=require('../config/db');
+import { query } from '../config/db';
 
-exports.deposit=async (req, res, next) => {
+export async function deposit(req, res, next) {
     const agentId=req.user.personId;
     const { accountNo,amount,refText}=req.body;
 
     try {
-        const [results]=await db.query(
+        const [results]=await query(
             `CALL sp_process_deposit(?,?,?,?,@p_txn_id,@p_new_balance);
             SELECT @p_txn_id AS txnId,@p_new_balance AS newBalance;`,
             [accountNo,agentId,amount,refText || 'Manual Deposit']
@@ -23,14 +23,14 @@ exports.deposit=async (req, res, next) => {
         }
         next(err);
     }
-};
+}
 
-exports.withdraw = async (req, res, next) => {
+export async function withdraw(req, res, next) {
     const agentId = req.user.personId;
     const { accountNo,amount,refText} = req.body;
 
     try {
-        const [results]=await db.query(
+        const [results]=await query(
             `CALL sp_process_withdrawal(?,?,?,?,@p_txn_id,@p_new_balance);
             SELECT @p_txn_id AS txnId,@p_new_balance AS newBalance;`,
             [accountNo,agentId,amount,refText || 'Manual Withdrawal']
@@ -48,4 +48,4 @@ exports.withdraw = async (req, res, next) => {
         }
         next(err);
     }
-};
+}
