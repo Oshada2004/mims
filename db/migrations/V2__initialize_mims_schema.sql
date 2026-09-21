@@ -62,7 +62,7 @@ CREATE TABLE SYSTEM_AUDIT_LOG(
 
 CREATE TABLE STAFF_PROFILE(
     person_id INT NOT NULL,
-    staff_role ENUM('MANAGER','CASHIER','OFFICER','AGENT') NOT NULL,
+    staff_role ENUM('MANAGER','CASHIER','OFFICER','AGENT','ADMIN') NOT NULL,
     branch_id INT NOT NULL,
     department ENUM('OPERATIONS','CREDIT','IT','CUSTOMER_SERVICE') NOT NULL,
     salary DECIMAL(12,2) NOT NULL,
@@ -182,7 +182,7 @@ CREATE TABLE FIXED_DEPOSIT(
     next_accrual_date DATE NULL,
     contracted_interest_rate DECIMAL(5,2) NOT NULL,
     curr_accrual_cycle_no INT NOT NULL DEFAULT 0,
-    status ENUM('ACTIVE','MATURED','PREMATURELY_CLOSED') NOT NULL DEFAULT 'ACTIVE',
+    status ENUM('ACTIVE','MATURED','PREMATURELY_CLOSED','SETTLED') NOT NULL DEFAULT 'ACTIVE',
     PRIMARY KEY(fd_id),
     UNIQUE KEY uq_fd_active_acc(active_acc_no),
     CONSTRAINT fk_fd_active_savings FOREIGN KEY(active_acc_no) 

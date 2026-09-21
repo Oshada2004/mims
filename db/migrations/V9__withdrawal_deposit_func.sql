@@ -18,6 +18,11 @@ BEGIN
         RESIGNAL;
     END;
 
+    IF p_amount<=0 THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT='Deposit amount must be greater than zero.';
+    END IF;
+
     IF NOT fn_is_within_banking_hours() THEN
         SIGNAL SQLSTATE '45000' 
         SET MESSAGE_TEXT='Manual deposits are permitted only during business banking hours';
@@ -28,6 +33,10 @@ BEGIN
         FROM SAVINGS_ACCOUNT
         WHERE account_no=p_account_no FOR UPDATE;
 
+        IF v_status IS NULL THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Savings account does not exist.';
+        END IF;
+
         IF v_status!='ACTIVE' THEN
             SIGNAL SQLSTATE '45000' 
             SET MESSAGE_TEXT='Savings account is not ACTIVE';
@@ -35,16 +44,16 @@ BEGIN
 
         SET p_new_balance=p_new_balance+p_amount;
 
-        UPDATE SAVINGS_ACCOUNT
-        SET balance=p_new_balance,last_txn_date=CURDATE()
-        WHERE account_no=p_account_no;
-
         INSERT INTO TRANSACTION_LOG(
             sav_acc_no,agent_person_id,fd_id,txn_type,amount,balance_after,ref_text,txn_timestamp
         ) VALUES(
             p_account_no,p_agent_id,NULL,'DEPOSIT',p_amount,p_new_balance,p_ref_text,NOW()
         );
         SET p_txn_id=LAST_INSERT_ID();
+
+        UPDATE SAVINGS_ACCOUNT
+        SET balance=p_new_balance,last_txn_date=CURDATE()
+        WHERE account_no=p_account_no;
     COMMIT;
 END$$
 
@@ -61,6 +70,7 @@ BEGIN
     DECLARE v_daily_limit DECIMAL(14,2);
     DECLARE v_already_withdrawn DECIMAL(14,2);
     DECLARE v_min_bal DECIMAL(14,2);
+    DECLARE v_curr_bal DECIMAL(14,2);
     DECLARE v_status ENUM('ACTIVE','DORMANT','CLOSED');
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -69,6 +79,11 @@ BEGIN
         RESIGNAL;
     END;
 
+    IF p_amount<=0 THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT='Withdrawal amount must be greater than zero.';
+    END IF;
+    
     IF NOT fn_is_within_banking_hours() THEN
         SIGNAL SQLSTATE '45000' 
         SET MESSAGE_TEXT='Manual withdrawals are permitted only during business banking hours';
@@ -85,9 +100,13 @@ BEGIN
 
     START TRANSACTION;
         SELECT balance,contracted_min_balance,status 
-        INTO p_new_balance,v_min_bal,v_status
+        INTO v_curr_bal,v_min_bal,v_status
         FROM SAVINGS_ACCOUNT
         WHERE account_no=p_account_no FOR UPDATE;
+
+        IF v_status IS NULL THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Account does not exist.';
+        END IF;
 
         IF v_status='DORMANT' THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Account is DORMANT';
@@ -102,16 +121,16 @@ BEGIN
 
         SET p_new_balance=p_new_balance-p_amount;
 
-        UPDATE SAVINGS_ACCOUNT
-        SET balance=p_new_balance,last_txn_date=CURDATE()
-        WHERE account_no=p_account_no;
-
         INSERT INTO TRANSACTION_LOG(
             sav_acc_no,agent_person_id,fd_id,txn_type,amount,balance_after,ref_text,txn_timestamp
         ) VALUES(
             p_account_no,p_agent_id,NULL,'WITHDRAWAL',p_amount,p_new_balance,p_ref_text,NOW()
         );
         SET p_txn_id=LAST_INSERT_ID();
+
+        UPDATE SAVINGS_ACCOUNT
+        SET balance=p_new_balance,last_txn_date=CURDATE()
+        WHERE account_no=p_account_no;
     COMMIT;
 END$$
 
