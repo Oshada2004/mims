@@ -1,20 +1,78 @@
-ALTER TABLE USER_ACCOUNT 
-MODIFY COLUMN user_role ENUM('ADMIN','STAFF','CUSTOMER','AGENT','MANAGER','ADULT_CUSTOMER','MINOR_CUSTOMER') NOT NULL;
+DELIMITER $$
 
-ALTER TABLE PERSON 
-ADD COLUMN person_role ENUM('STAFF', 'ADULT', 'MINOR') NOT NULL DEFAULT 'ADULT';
+CREATE TRIGGER trg_staff_before_insert
+BEFORE INSERT ON STAFF_PROFILE
+FOR EACH ROW
+BEGIN
 
-ALTER TABLE PERSON 
-ADD CONSTRAINT uq_person_role UNIQUE (person_id, person_role);
+    IF EXISTS (
+        SELECT 1
+        FROM ADULT_CUSTOMER_PROFILES
+        WHERE person_id=NEW.person_id
+    )
+    OR EXISTS (
+        SELECT 1
+        FROM MINOR_CUSTOMER_PROFILES
+        WHERE person_id=NEW.person_id
+    )
+    THEN
 
-ALTER TABLE MINOR_CUSTOMER_PROFILES 
-ADD COLUMN person_role ENUM('MINOR') NOT NULL DEFAULT 'MINOR';
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT='Person already belongs to another customer subtype';
 
--- ALTER TABLE MINOR_CUSTOMER_PROFILES 
--- ADD CONSTRAINT chk_minor_role CHECK (person_role = 'MINOR');
+    END IF;
 
-ALTER TABLE MINOR_CUSTOMER_PROFILES 
-ADD CONSTRAINT fk_minor_person_role 
-FOREIGN KEY (person_id, person_role) 
-REFERENCES PERSON(person_id, person_role)
-ON DELETE CASCADE ON UPDATE CASCADE;
+END$$
+
+
+CREATE TRIGGER trg_adult_customer_before_insert
+BEFORE INSERT ON ADULT_CUSTOMER_PROFILES
+FOR EACH ROW
+BEGIN
+
+    IF EXISTS (
+        SELECT 1
+        FROM STAFF_PROFILE
+        WHERE person_id=NEW.person_id
+    )
+    OR EXISTS (
+        SELECT 1
+        FROM MINOR_CUSTOMER_PROFILES
+        WHERE person_id=NEW.person_id
+    )
+    THEN
+
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT='Person already belongs to another customer subtype';
+
+    END IF;
+
+END$$
+
+
+CREATE TRIGGER trg_minor_customer_before_insert
+BEFORE INSERT ON MINOR_CUSTOMER_PROFILES
+FOR EACH ROW
+BEGIN
+
+    IF EXISTS (
+        SELECT 1
+        FROM ADULT_CUSTOMER_PROFILES
+        WHERE person_id=NEW.person_id
+    )
+    OR EXISTS (
+        SELECT 1
+        FROM STAFF_PROFILE
+        WHERE person_id=NEW.person_id
+    )
+    THEN
+
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT='Person already belongs to another customer subtype';
+
+    END IF;
+
+END$$
+
+
+DELIMITER ;
