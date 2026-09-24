@@ -1,15 +1,5 @@
 DELIMITER $$
 
--- Find age from dob
-DROP FUNCTION IF EXISTS fn_calculate_age$$
-CREATE FUNCTION fn_calculate_age(p_dob DATE) 
-RETURNS INT 
-NOT DETERMINISTIC
-NO SQL
-BEGIN
-    RETURN TIMESTAMPDIFF(YEAR,p_dob,CURDATE());
-END$$
-
 -- Acc type age validation
 DROP FUNCTION IF EXISTS fn_is_plan_eligible$$
 CREATE FUNCTION fn_is_plan_eligible(p_plan_code VARCHAR(10),p_dob DATE) 
