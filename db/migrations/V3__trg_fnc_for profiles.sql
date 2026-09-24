@@ -43,7 +43,7 @@ READS SQL DATA
 BEGIN
     RETURN EXISTS(
         SELECT 1
-        FROM ADULT_CUSTOMER_PROFILES
+        FROM ADULT_CUSTOMER_PROFILE
         WHERE person_id=p_person_id
     );
 END$$
@@ -60,7 +60,7 @@ READS SQL DATA
 BEGIN
     RETURN EXISTS(
         SELECT 1
-        FROM MINOR_CUSTOMER_PROFILES
+        FROM MINOR_CUSTOMER_PROFILE
         WHERE person_id=p_person_id
     );
 END$$
@@ -81,7 +81,7 @@ END$$
 
 DROP TRIGGER IF EXISTS trg_adult_customer_before_insert$$
 CREATE TRIGGER trg_adult_customer_before_insert
-BEFORE INSERT ON ADULT_CUSTOMER_PROFILES
+BEFORE INSERT ON ADULT_CUSTOMER_PROFILE
 FOR EACH ROW
 BEGIN
     IF fn_is_staff(NEW.person_id) OR fn_is_minor_customer(NEW.person_id)
@@ -94,7 +94,7 @@ END$$
 
 DROP TRIGGER IF EXISTS trg_minor_customer_before_insert$$
 CREATE TRIGGER trg_minor_customer_before_insert
-BEFORE INSERT ON MINOR_CUSTOMER_PROFILES
+BEFORE INSERT ON MINOR_CUSTOMER_PROFILE
 FOR EACH ROW
 BEGIN
     IF fn_is_staff(NEW.person_id) OR fn_is_adult_customer(NEW.person_id)
@@ -115,11 +115,27 @@ BEGIN
     RETURN TIMESTAMPDIFF(YEAR,p_dob,CURDATE());
 END$$
 
+-- validate NIC exsistence
+DROP FUNCTION IF EXISTS fn_person_has_nic$$
+CREATE FUNCTION fn_person_has_nic(
+    p_person_id INT
+)
+RETURNS BOOLEAN
+NOT DETERMINISTIC
+READS SQL DATA
+BEGIN
+    RETURN EXISTS(
+        SELECT 1
+        FROM PERSON
+        WHERE (person_id=p_person_id) AND (nic IS NOT NULL) AND (TRIM(nic) <> '')
+    );
+END$$
+
 
 -- validate age
 DROP TRIGGER IF EXISTS trg_adult_customer_validate_age$$
 CREATE TRIGGER trg_adult_customer_validate_age
-BEFORE INSERT ON ADULT_CUSTOMER_PROFILES
+BEFORE INSERT ON ADULT_CUSTOMER_PROFILE
 FOR EACH ROW
 BEGIN
     DECLARE v_dob DATE;
@@ -136,7 +152,7 @@ END$$
 
 DROP TRIGGER IF EXISTS trg_minor_customer_validate_age$$
 CREATE TRIGGER trg_minor_customer_validate_age
-BEFORE INSERT ON MINOR_CUSTOMER_PROFILES
+BEFORE INSERT ON MINOR_CUSTOMER_PROFILE
 FOR EACH ROW
 BEGIN
     DECLARE v_dob DATE;
@@ -166,10 +182,36 @@ BEGIN
     END IF;
 END$$
 
--- validate guardian age
+-- validate NIC
+
+
+DROP TRIGGER IF EXISTS trg_adult_customer_validate_nic$$
+CREATE TRIGGER trg_adult_customer_validate_nic
+BEFORE INSERT ON ADULT_CUSTOMER_PROFILE
+FOR EACH ROW
+BEGIN
+    IF NOT fn_person_has_nic(NEW.person_id) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT='Person must have a NIC.';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS trg_staff_validate_nic$$
+CREATE TRIGGER trg_staff_validate_nic
+BEFORE INSERT ON STAFF_PROFILE
+FOR EACH ROW
+BEGIN
+    IF NOT fn_person_has_nic(NEW.person_id) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT='Person must have a NIC.';
+    END IF;
+END$$
+
+
+-- validate guardian
 DROP TRIGGER IF EXISTS trg_minor_customer_validate_guardian$$
 CREATE TRIGGER trg_minor_customer_validate_guardian
-BEFORE INSERT ON MINOR_CUSTOMER_PROFILES
+BEFORE INSERT ON MINOR_CUSTOMER_PROFILE
 FOR EACH ROW
 BEGIN
     DECLARE v_guardian_dob DATE;
@@ -177,11 +219,19 @@ BEGIN
     INTO v_guardian_dob
     FROM PERSON
     WHERE person_id=NEW.guardian_person_id;
+
+    -- NIC validation
+    IF NOT fn_person_has_nic(NEW.guardian_person_id) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT='Guardian must have a NIC.';
+    END IF;
+
+    -- age validation
     IF NOT (
         fn_is_adult_customer(NEW.guardian_person_id) OR fn_calculate_age(v_guardian_dob)>=18
     ) THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT='Guardian must be an adult.';
+            SET MESSAGE_TEXT='Guardian must be an adult.';
     END IF;
 END$$
 
