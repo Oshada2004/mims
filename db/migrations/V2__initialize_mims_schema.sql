@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS connection_test;
 CREATE TABLE BANK_META_DATA(
     bank_id VARCHAR(10) NOT NULL,
     bank_name VARCHAR(50) NOT NULL,
-    daily_agent_withdrawal_limit DECIMAL(14,2) NOT NULL,
+    daily_agent_withdrawal_limit NUMERIC(14,2) NOT NULL,
     contact_email VARCHAR(50) NOT NULL,
     motto VARCHAR(30) NULL,
     bank_start_time TIME NOT NULL,
@@ -27,9 +27,11 @@ CREATE TABLE PERSON(
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     dob DATE NOT NULL,
+    nic CHAR(12) NULL, -- for a child account guardian NIC
     phone_number VARCHAR(12) NOT NULL,
     address VARCHAR(100) NOT NULL,
     postal_code VARCHAR(6) NOT NULL,
+    UNIQUE KEY uq_adult_nic(nic),
     PRIMARY KEY(person_id)
 );
 
@@ -65,8 +67,8 @@ CREATE TABLE STAFF_PROFILE(
     staff_role ENUM('MANAGER','CASHIER','OFFICER','AGENT','ADMIN') NOT NULL,
     branch_id INT NOT NULL,
     department ENUM('OPERATIONS','CREDIT','IT','CUSTOMER_SERVICE') NOT NULL,
-    salary DECIMAL(12,2) NOT NULL,
-    daily_cash DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    salary NUMERIC(12,2) NOT NULL,
+    daily_cash NUMERIC(12,2) NOT NULL DEFAULT 0.00,
     PRIMARY KEY(person_id),
     CONSTRAINT fk_staff_person FOREIGN KEY(person_id) 
         REFERENCES PERSON(person_id) 
@@ -78,13 +80,11 @@ CREATE TABLE STAFF_PROFILE(
 
 CREATE TABLE ADULT_CUSTOMER_PROFILES(
     person_id INT NOT NULL,
-    nic VARCHAR(12) NOT NULL,
     tax_id VARCHAR(20) NULL,
     agent_person_id INT NULL,
     occupation VARCHAR(50) NULL,
-    monthly_income DECIMAL(12,2) NULL,
+    monthly_income NUMERIC(12,2) NULL,
     PRIMARY KEY(person_id),
-    UNIQUE KEY uq_adult_nic(nic),
     UNIQUE KEY uq_adult_tax_id(tax_id),
     CONSTRAINT fk_adult_person FOREIGN KEY(person_id) 
         REFERENCES PERSON(person_id) 
@@ -116,8 +116,8 @@ CREATE TABLE MINOR_CUSTOMER_PROFILES(
 CREATE TABLE SAV_ACC_PLAN(
     plan_code ENUM('CHILD','TEEN','ADULT','SENIOR','JOINT') NOT NULL,
     plan_name VARCHAR(30) NOT NULL,
-    annual_interest_rate DECIMAL(5,2) NOT NULL,
-    min_balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    annual_interest_rate NUMERIC(5,2) NOT NULL,
+    min_balance NUMERIC(12,2) NOT NULL DEFAULT 0.00,
     min_age INT NOT NULL DEFAULT 0,
     max_age INT NULL,
     allows_joint BOOLEAN NOT NULL DEFAULT FALSE,
@@ -127,7 +127,7 @@ CREATE TABLE SAV_ACC_PLAN(
 CREATE TABLE FD_ACC_PLAN(
     term_code ENUM('6M','1Y','3Y') NOT NULL,
     duration_months INT NOT NULL,
-    annual_interest_rate DECIMAL(5,2) NOT NULL,
+    annual_interest_rate NUMERIC(5,2) NOT NULL,
     PRIMARY KEY(term_code)
 );
 
@@ -139,10 +139,10 @@ CREATE TABLE SAVINGS_ACCOUNT(
     opened_date DATE NOT NULL,
     status ENUM('ACTIVE','DORMANT','CLOSED') NOT NULL DEFAULT 'ACTIVE',
     next_accrual_date DATE NULL,
-    balance DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-    daily_interest DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-    contracted_interest_rate DECIMAL(5,2) NOT NULL,
-    contracted_min_balance DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    balance NUMERIC(14,2) NOT NULL DEFAULT 0.00,
+    daily_interest NUMERIC(14,2) NOT NULL DEFAULT 0.00,
+    contracted_interest_rate NUMERIC(5,2) NOT NULL,
+    contracted_min_balance NUMERIC(14,2) NOT NULL DEFAULT 0.00,
     curr_accrual_cycle_no INT NOT NULL DEFAULT 0,
     last_txn_date DATE NULL,
     closed_date DATE NULL,
@@ -176,11 +176,11 @@ CREATE TABLE FIXED_DEPOSIT(
     active_acc_no VARCHAR(15) NULL,
     acc_no VARCHAR(15) NOT NULL,
     term_code ENUM('6M','1Y','3Y') NOT NULL,
-    principal_amount DECIMAL(14,2) NOT NULL,
+    principal_amount NUMERIC(14,2) NOT NULL,
     opened_date DATE NOT NULL,
     maturity_date DATE NOT NULL,
     next_accrual_date DATE NULL,
-    contracted_interest_rate DECIMAL(5,2) NOT NULL,
+    contracted_interest_rate NUMERIC(5,2) NOT NULL,
     curr_accrual_cycle_no INT NOT NULL DEFAULT 0,
     status ENUM('ACTIVE','MATURED','PREMATURELY_CLOSED','SETTLED') NOT NULL DEFAULT 'ACTIVE',
     PRIMARY KEY(fd_id),
@@ -202,8 +202,8 @@ CREATE TABLE TRANSACTION_LOG(
     agent_person_id INT NULL,
     fd_id VARCHAR(15) NULL,
     txn_type ENUM('DEPOSIT','WITHDRAWAL','SAVINGS_INTEREST','FD_INTEREST') NOT NULL,
-    amount DECIMAL(14,2) NOT NULL,
-    balance_after DECIMAL(14,2) NOT NULL,
+    amount NUMERIC(14,2) NOT NULL,
+    balance_after NUMERIC(14,2) NOT NULL,
     ref_text VARCHAR(50) NULL,
     txn_timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY(txn_id),
