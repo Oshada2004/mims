@@ -226,6 +226,12 @@ BEGIN
         SET MESSAGE_TEXT='Guardian must have a NIC.';
     END IF;
 
+    -- canot be a staff member
+    IF fn_is_staff(NEW.guardian_person_id) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT='Staff members cannot be guardians.';
+    END IF;
+
     -- age validation
     IF NOT (
         fn_is_adult_customer(NEW.guardian_person_id) OR fn_calculate_age(v_guardian_dob)>=18

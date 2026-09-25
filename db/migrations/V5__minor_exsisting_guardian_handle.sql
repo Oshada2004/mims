@@ -24,7 +24,8 @@ BEGIN
     WHERE p.nic=TRIM(p_nic)
         AND p.nic IS NOT NULL
         AND TRIM(p.nic) <> ''
-        AND (fn_is_adult_customer(p.person_id) OR fn_calculate_age(p.dob)>=18);
+        AND (fn_is_adult_customer(p.person_id) OR fn_calculate_age(p.dob)>=18)
+        AND NOT fn_is_staff(p.person_id);
 END$$
 
 
