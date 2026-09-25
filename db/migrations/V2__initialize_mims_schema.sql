@@ -27,7 +27,7 @@ CREATE TABLE PERSON(
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     dob DATE NOT NULL,
-    nic CHAR(12) NULL, -- for a child account guardian NIC
+    nic CHAR(12) NULL, -- required for adult,staff,guardian. NULL for minor
     phone_number VARCHAR(12) NOT NULL,
     address VARCHAR(100) NOT NULL,
     postal_code VARCHAR(6) NOT NULL,
