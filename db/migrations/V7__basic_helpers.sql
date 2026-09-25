@@ -97,6 +97,12 @@ BEGIN
     DECLARE v_curr_bal DECIMAL(14,2) DEFAULT NULL;
     DECLARE v_min_bal DECIMAL(14,2) DEFAULT NULL;
     DECLARE v_status ENUM ('ACTIVE', 'DORMANT', 'CLOSED') DEFAULT NULL;
+    
+    IF NEW.amount<=0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT='Transaction amount must be greater than zero.';
+    END IF;
+    
     IF NEW.txn_type='WITHDRAWAL' THEN
         IF NEW.sav_acc_no IS NULL THEN
             SIGNAL SQLSTATE '45000' 
@@ -120,10 +126,6 @@ BEGIN
         IF(v_curr_bal-NEW.amount)<v_min_bal THEN
             SIGNAL SQLSTATE '45000' 
             SET MESSAGE_TEXT='Transaction breaches the contracted minimum balance.';
-        END IF;
-        IF NEW.amount<=0 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT='Transaction amount must be greater than zero.';
         END IF;
     END IF;
 END$$
@@ -159,10 +161,10 @@ BEGIN
             SELECT 1 
             FROM FIXED_DEPOSIT 
             WHERE(acc_no=OLD.account_no OR active_acc_no=OLD.account_no)
-                AND status IN('ACTIVE', 'MATURED')
+                AND status='ACTIVE'
         ) THEN
             SIGNAL SQLSTATE '45000' 
-            SET MESSAGE_TEXT='Savings account has active or matured, unsettled Fixed Deposits linked to it.';
+            SET MESSAGE_TEXT='Savings account has active, unsettled Fixed Deposits linked to it.';
         END IF;
     END IF;
 END$$

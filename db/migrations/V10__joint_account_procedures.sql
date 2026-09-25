@@ -1,5 +1,3 @@
-
-
 DELIMITER $$
 
 drop PROCEDURE if EXISTS sp_add_joint_holder$$
@@ -12,6 +10,8 @@ create PROCEDURE sp_add_joint_holder(
 BEGIN
 
 DECLARE v_dob DATE;
+DECLARE v_allows_joint BOOLEAN;
+DECLARE v_status ENUM('ACTIVE','DORMANT','CLOSED');
 
 DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -19,8 +19,26 @@ DECLARE EXIT HANDLER FOR SQLEXCEPTION
         RESIGNAL;
     END;
 
-select dob INTO v_dob from PERSON WHERE  person_id = p_co_customer_id;
+SELECT sa.status,p.allows_joint 
+INTO v_status,v_allows_joint
+FROM SAVINGS_ACCOUNT sa
+JOIN SAV_ACC_PLAN p ON sa.plan_code=p.plan_code
+WHERE sa.account_no=p_account_no;
 
+IF v_status IS NULL THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Savings account does not exist.';
+END IF;
+
+IF v_status != 'ACTIVE' THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Account must be ACTIVE to map joint holders.';
+END IF;
+
+IF v_allows_joint IS NULL OR v_allows_joint=FALSE THEN
+SIGNAL SQLSTATE '45000' 
+SET MESSAGE_TEXT='Selected account plan does not permit joint ownership.';
+END IF;
+
+SELECT dob INTO v_dob FROM PERSON WHERE person_id=p_co_customer_id;
 IF v_dob IS NULL THEN 
     SIGNAL SQLSTATE '45000'
     SET MESSAGE_TEXT = 'Customer does not exist.';

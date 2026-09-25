@@ -15,6 +15,7 @@ BEGIN
     DECLARE v_dob DATE;
     DECLARE v_rate DECIMAL(5,2);
     DECLARE v_min_bal DECIMAL(12,2);
+    DECLARE v_guardian_id INT;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -29,6 +30,17 @@ BEGIN
 
     IF NOT fn_is_plan_eligible(p_plan_code, v_dob) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Opening Failed: Customer age does not qualify for selected plan.';
+    END IF;
+
+    IF p_plan_code IN ('CHILD','TEEN') THEN
+        SELECT guardian_person_id INTO v_guardian_id 
+        FROM MINOR_CUSTOMER_PROFILES 
+        WHERE person_id=p_customer_id;
+
+        IF v_guardian_id IS NULL THEN
+            SIGNAL SQLSTATE '45000' 
+            SET MESSAGE_TEXT='Children and Teen accounts require a linked guardian.';
+        END IF;
     END IF;
 
     SELECT annual_interest_rate, min_balance 
