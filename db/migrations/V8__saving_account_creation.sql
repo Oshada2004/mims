@@ -34,7 +34,7 @@ BEGIN
 
     IF p_plan_code IN ('CHILD','TEEN') THEN
         SELECT guardian_person_id INTO v_guardian_id 
-        FROM MINOR_CUSTOMER_PROFILES 
+        FROM MINOR_CUSTOMER_PROFILE 
         WHERE person_id=p_customer_id;
 
         IF v_guardian_id IS NULL THEN
