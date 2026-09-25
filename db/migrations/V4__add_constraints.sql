@@ -109,6 +109,11 @@ BEGIN
 
     START TRANSACTION; -- treats both inserts as one transaction
 
+    IF p_guardian_nic IS NULL OR TRIM(p_guardian_nic)='' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT='Guardian must have a NIC.';
+    END IF;
+
     -- Create guardian as a PERSON
     INSERT INTO PERSON(first_name,last_name,dob,nic,phone_number,address,postal_code)
     VALUES(p_guardian_first_name,p_guardian_last_name,p_guardian_dob,p_guardian_nic,p_guardian_phone_number,p_guardian_address,p_guardian_postal_code);
