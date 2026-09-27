@@ -1,11 +1,9 @@
 const express = require('express');
 const {getPersonById} = require('../controllers/accountController');
-const authenticate = require('../middleware/authenticate');
-const authorize = require('../middleware/authorize');
 
 const router = express.Router();
 
-router.get('/:personId', authenticate, authorize('STAFF'), async (req, res) =>{
+router.get('/:personId', async (req, res) =>{
 	const personId = Number(req.params.personId);
 
 	if(!Number.isInteger(personId) || personId<=0) {

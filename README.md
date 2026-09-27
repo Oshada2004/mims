@@ -15,7 +15,6 @@ provides a basic database connection check.
     DB_PASSWORD=abc123
     DB_ROOT_PASSWORD=abc123
     PORT=5000
-    JWT_SECRET=change-this-to-a-long-random-string
 	```
 
 2. Build and start the services:
@@ -55,24 +54,6 @@ To run migrations without starting the frontend and backend:
 ```bash
 docker compose up database flyway
 ```
-
-## Authentication & Authorization
-
-- `POST /api/auth/login` — body `{ "username", "password" }` (username or email).
-  Verifies the password against `USER_ACCOUNT.password_hash` and returns a JWT
-  signed with `JWT_SECRET`, valid for 8 hours. The token payload carries
-  `person_id`, `username`, `person_role` (`STAFF`/`ADULT`/`MINOR`), and
-  `staff_role` (`MANAGER`/`CASHIER`/`OFFICER`/`AGENT`, or `null`).
-- `GET /api/auth/me` — requires `Authorization: Bearer <token>`; returns the
-  decoded user from the token.
-- Protect any route with `authenticate` (verifies the token) and, where a
-  specific role is required, `authorize('STAFF')` / `authorize('MANAGER')`
-  etc. (checks `person_role` or `staff_role`). See
-  `backend/src/middleware/authenticate.js` and `authorize.js`, and
-  `accountRoutes.js` for an example.
-- `USER_ACCOUNT.password_hash` must be a bcrypt hash (e.g. via `bcryptjs`);
-  there is no self-registration endpoint yet, accounts are provisioned
-  directly in the database.
 
 ## Folder Structure
 
