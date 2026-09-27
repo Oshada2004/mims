@@ -3,16 +3,18 @@ const cors = require('cors');
 require('dotenv').config();
 const db = require('./src/config/db');
 const accountRoutes = require('./src/routes/accountRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/api/auth', authRoutes);
 app.use('/api/accounts', accountRoutes);
 
 app.get('/api/test', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM connection_test');
-    res.json(rows[0]);
+    await db.query('SELECT 1');
+    res.json({ status_message: 'DB connected successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
