@@ -49,7 +49,7 @@ BEGIN
         sa.agent_person_id, 
         sa.plan_code,
         sa.opened_date AS savings_opened_date,
-        fd.fd_id ,
+        fd.fd_id,
         fd.principal_amount,
         fd.term_code,
         fd.opened_date AS fd_opened_date
