@@ -3,10 +3,12 @@ const cors = require('cors');
 require('dotenv').config();
 const db = require('./src/config/db');
 const accountRoutes = require('./src/routes/accountRoutes');
+const reportRoutes = require('./src/routes/reportRoutes');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/api/reports', reportRoutes);
 app.use('/api/accounts', accountRoutes);
 
 app.get('/api/test', async (req, res) => {
