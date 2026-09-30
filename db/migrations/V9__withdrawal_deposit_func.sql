@@ -114,12 +114,12 @@ BEGIN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Account is CLOSED';
         END IF;
 
-        IF(p_new_balance-p_amount) < v_min_bal THEN
+        IF(v_curr_bal-p_amount) < v_min_bal THEN
             SIGNAL SQLSTATE '45000' 
             SET MESSAGE_TEXT='Remaining balance breaches the contracted minimum balance';
         END IF;
 
-        SET p_new_balance=p_new_balance-p_amount;
+        SET p_new_balance = v_curr_bal - p_amount;
 
         INSERT INTO TRANSACTION_LOG(
             sav_acc_no,agent_person_id,fd_id,txn_type,amount,balance_after,ref_text,txn_timestamp
