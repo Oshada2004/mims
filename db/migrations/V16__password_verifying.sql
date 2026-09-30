@@ -179,7 +179,7 @@ BEGIN
             SET p_branch_id = NULL;
         END IF;
 
-        -- Record entry in SYSTEM_AUDIT_LOG
+      
         INSERT INTO SYSTEM_AUDIT_LOG (person_id, action, ip, timestamp)
         VALUES (v_auth_person_id, 'LOGIN', p_ip_address, NOW());
 
