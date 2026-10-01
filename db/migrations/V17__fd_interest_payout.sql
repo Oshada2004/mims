@@ -44,7 +44,8 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT='Run date is required.';
     END IF;
-        OPEN cur_fd;
+    START TRANSACTION;
+    OPEN cur_fd;
 
     payout_loop: LOOP
         FETCH cur_fd INTO v_fd_id, v_acc_no;
@@ -52,8 +53,6 @@ BEGIN
         IF v_done THEN
             LEAVE payout_loop;
         END IF;
-
-        START TRANSACTION;
 
         SET v_account_status= NULL;
         SET v_balance = NULL;
@@ -112,14 +111,12 @@ BEGIN
         END IF;
 
         IF v_fd_status <> 'ACTIVE' THEN
-            COMMIT;
             ITERATE payout_loop;
         END IF;
 
         IF (v_next_accrual_date IS NULL
             OR v_next_accrual_date > p_run_date)
            AND v_maturity_date > p_run_date THEN
-            COMMIT;
             ITERATE payout_loop;
         END IF;
 
@@ -206,11 +203,10 @@ BEGIN
 
         END IF;
 
-        COMMIT;
-
     END LOOP payout_loop;
 
     CLOSE cur_fd;
+    COMMIT;
 END$$
 
 DELIMITER ;
