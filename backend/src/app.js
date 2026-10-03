@@ -3,6 +3,7 @@ const cors = require('cors');
 const db = require('./config/db');
 
 const authRoutes = require('./routes/authRoutes');
+
 // const staffRoutes = require('./routes/staffRoutes');
 // const customerRoutes = require('./routes/customerRoutes');
 // const accountRoutes = require('./routes/accountRoutes');

@@ -1,47 +1,78 @@
-const db = require('../config/db');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const pool = require('../config/db');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mims_super_secret_jwt_key_2026';
+// Register Credentials
+exports.register = async (req, res) => {
+  const { person_id, email, username, password, user_role } = req.body;
+  try {
+    await pool.query(
+      `CALL sp_register_user_credentials(?, ?, ?, ?, ?)`,
+      [person_id, email, username, password, user_role || 'CUSTOMER']
+    );
+    res.status(201).json({ message: 'User credentials created successfully.' });
+  } catch (error) {
+    res.status(400).json({ error: error.sqlMessage || error.message });
+  }
+};
 
-exports.login = async (req, res, next) => {
-    const { username, password } = req.body;
-    try {
-        const [results] = await db.query('CALL sp_authenticate_user(?)', [username]);
-        const user = results[0][0];
+// Login
+exports.login = async (req, res) => {
+  const { username, password } = req.body;
+  const clientIp = req.ip || req.connection.remoteAddress || '127.0.0.1';
 
-        if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-        }
+  try {
+    const [rows] = await pool.query(
+      `CALL sp_authenticate_user(?, ?, ?, @p_session_id, @p_person_id, @p_user_role, @p_staff_role, @p_branch_id);
+       SELECT @p_session_id AS session_id, @p_person_id AS person_id, @p_user_role AS user_role, @p_staff_role AS staff_role, @p_branch_id AS branch_id;`,
+      [username, password, clientIp]
+    );
 
-        const isMatch = await bcrypt.compare(password, user.password_hash);
-        if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-        }
+    const authResult = rows[1][0];
+    res.json({
+      message: 'Login successful',
+      session_id: authResult.session_id,
+      user: {
+        person_id: authResult.person_id,
+        user_role: authResult.user_role,
+        staff_role: authResult.staff_role,
+        branch_id: authResult.branch_id
+      }
+    });
+  } catch (error) {
+    res.status(401).json({ error: error.sqlMessage || 'Authentication failed' });
+  }
+};
 
-        const token = jwt.sign(
-            {
-                personId: user.person_id,
-                username: user.username,
-                role: user.user_role,
-                staffRole: user.staff_role,
-                branchId: user.branch_id
-            },
-            JWT_SECRET,
-            { expiresIn: '8h' }
-        );
+// Get Profile Context
+exports.getProfile = async (req, res) => {
+  const sessionId = req.headers['authorization'];
+  if (!sessionId) return res.status(401).json({ error: 'Session ID required' });
 
-        return res.status(200).json({
-            success: true,
-            token,
-            user: {
-                personId: user.person_id,
-                username: user.username,
-                role: user.user_role,
-                staffRole: user.staff_role
-            }
-        });
-    } catch (err) {
-        next(err);
+  try {
+    const [rows] = await pool.query(
+      `SELECT fn_get_auth_user_context(?) AS user_context`,
+      [sessionId]
+    );
+    const userContext = rows[0].user_context;
+
+    if (userContext.error) {
+      return res.status(401).json({ error: userContext.error });
     }
+
+    res.json({ user: userContext });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Logout
+exports.logout = async (req, res) => {
+  const sessionId = req.headers['authorization'];
+  const clientIp = req.ip || '127.0.0.1';
+
+  try {
+    await pool.query(`CALL sp_logout_user(?, ?)`, [sessionId, clientIp]);
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(400).json({ error: error.sqlMessage || error.message });
+  }
 };

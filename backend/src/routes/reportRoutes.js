@@ -1,8 +1,10 @@
 const express = require('express');
-const reportController = require('../controllers/reportController');
-
 const router = express.Router();
+const authController = require('../controllers/authController');
 
-router.get('/active-fds', reportController.getActiveFDReport);
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+router.get('/me', authController.getProfile);
+router.post('/logout', authController.logout);
 
 module.exports = router;
