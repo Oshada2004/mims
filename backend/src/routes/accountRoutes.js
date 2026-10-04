@@ -1,26 +1,47 @@
 const express = require('express');
-const {getPersonById} = require('../controllers/accountController');
-
 const router = express.Router();
+const accountController = require('../controllers/accountController');
 
-router.get('/:personId', async (req, res) =>{
-	const personId = Number(req.params.personId);
+/**
+ * @route   POST /api/accounts
+ * @desc    Open a new savings account
+ * @access  Agent / Admin (can be protected with auth middleware)
+ */
+router.post('/', accountController.openSavingsAccount);
 
-	if(!Number.isInteger(personId) || personId<=0) {
-		return res.status(400).json({error:'personId must be a positive integer'});
-	}
+/**
+ * @route   GET /api/accounts/customer/:personId
+ * @desc    Get all savings accounts associated with a customer
+ * @access  Agent / Officer / Customer
+ */
+router.get('/customer/:personId', accountController.getAccountsByCustomer);
 
-	try{
-		const person = await getPersonById(personId);
+/**
+ * @route   GET /api/accounts/:accountNo
+ * @desc    Get savings account details by account number
+ * @access  Agent / Officer / Customer
+ */
+router.get('/:accountNo', accountController.getAccountByNo);
 
-		if(!person){
-			return res.status(404).json({error:'Person not found'});
-		}
+/**
+ * @route   POST /api/accounts/:accountNo/joint-holder
+ * @desc    Add a joint account holder
+ * @access  Agent / Officer
+ */
+router.post('/:accountNo/joint-holder', accountController.addJointHolder);
 
-		return res.json(person);
-	}catch (error){
-		return res.status(500).json({error:'Failed to fetch person'});
-	}
-});
+/**
+ * @route   POST /api/accounts/:accountNo/reactivate
+ * @desc    Reactivate a dormant savings account
+ * @access  Agent / Officer / Admin
+ */
+router.post('/:accountNo/reactivate', accountController.reactivateAccount);
+
+/**
+ * @route   POST /api/accounts/:accountNo/close
+ * @desc    Close a savings account (balance must be zero)
+ * @access  Agent / Officer / Admin
+ */
+router.post('/:accountNo/close', accountController.closeAccount);
 
 module.exports = router;

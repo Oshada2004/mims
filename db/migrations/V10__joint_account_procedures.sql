@@ -99,48 +99,6 @@ BEGIN
 END$$
 
 
-DROP PROCEDURE IF EXISTS sp_close_savings_account$$
 
-CREATE PROCEDURE sp_close_savings_account(
-    IN p_account_no VARCHAR(15),
-    IN p_operator_id INT
-)
-BEGIN
-    DECLARE v_balance DECIMAL(14,2);
-    DECLARE v_status ENUM('ACTIVE', 'DORMANT', 'CLOSED');
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    
-    SELECT balance, status 
-    INTO v_balance, v_status 
-    FROM SAVINGS_ACCOUNT 
-    WHERE account_no = p_account_no;
-
-    IF v_status IS NULL THEN
-        SIGNAL SQLSTATE '45000' 
-        SET MESSAGE_TEXT = 'Closure Rejected: Account does not exist.';
-    ELSEIF v_status = 'CLOSED' THEN
-        SIGNAL SQLSTATE '45000' 
-        SET MESSAGE_TEXT = 'Closure Rejected: Account is already closed.';
-    ELSEIF v_balance > 0.00 THEN
-        SIGNAL SQLSTATE '45000' 
-        SET MESSAGE_TEXT = 'Closure Rejected: Account balance must be zero before closing.';
-    END IF;
-
-    
-    START TRANSACTION;
-        UPDATE SAVINGS_ACCOUNT 
-        SET status = 'CLOSED', closed_date = CURDATE() 
-        WHERE account_no = p_account_no;
-
-        INSERT INTO SYSTEM_AUDIT_LOG (person_id, action, ip, timestamp)
-        VALUES (p_operator_id, 'UPDATE', 'INTERNAL', NOW());
-    COMMIT;
-END$$
 
 DELIMITER ;
