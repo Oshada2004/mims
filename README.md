@@ -72,3 +72,87 @@ mims/
 - Express backend with CORS, environment configuration, and `/api/test`.
 - React frontend that displays the database connection status.
 - Docker Compose setup for database, backend, and frontend containers.
+
+Backend Setup
+Navigate to the backend directory:
+
+```Bash
+cd backend
+```
+Install dependencies:
+
+```Bash
+npm install
+```
+Create a .env file in backend/:
+
+```Code snippet
+PORT=8080
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=mims_db
+```
+Start the Express backend server:
+
+```Bash
+npm start
+# or for development mode:
+node src/index.js
+```
+
+Frontend Setup
+Open a new terminal tab and navigate to the frontend directory:
+
+```bash
+cd frontend
+```
+Install dependencies:
+
+```Bash
+npm install
+```
+Create a .env file in frontend/:
+
+Code snippet
+VITE_API_URL=http://localhost:8080/api
+Start the Vite development server:
+
+```Bash
+npm run dev
+```
+Open http://localhost:5173 in your browser.
+
+Testing API Endpoints via CLI (curl)
+Once the backend is running, test the single-step endpoints directly using curl:
+
+1. Full User Registration (Creates Person + Profile + Auth Credentials)
+```Bash
+curl -X POST "http://localhost:8080/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "()",
+    "last_name": "()",
+    "dob": "2000-01-01",
+    "nic": "200012345678",
+    "phone_number": "0771234567",
+    "address": "Katubedda, Moratuwa",
+    "postal_code": "10400",
+    "email": "()@gmail.com",
+    "username": "()",
+    "password": "()",
+    "user_role": "ADMIN",
+    "branch_id": 1,
+    "department": "IT",
+    "salary": 150000.00
+  }'
+  ```
+User Authentication (Login)
+```Bash
+curl -X POST "http://localhost:8080/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "lasith_admin",
+    "password": "Password123!"
+  }'
+```
