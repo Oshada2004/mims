@@ -1,12 +1,16 @@
 import { useContext } from 'react';
-import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
-export const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useContext(AuthContext);
+export default function Dashboard() {
+  const { user, logout } = useContext(AuthContext);
 
-  if (loading) return <div>Loading session...</div>;
-  if (!user) return <Navigate to="/login" />;
-
-  return children;
-};
+  return (
+    <div style={{ padding: '20px' }}>
+      <h1>Dashboard</h1>
+      <p>Welcome, {user?.first_name || user?.username}!</p>
+      <p>Role: {user?.user_role}</p>
+      {user?.staff_role && <p>Staff Role: {user?.staff_role}</p>}
+      <button onClick={logout}>Logout</button>
+    </div>
+  );
+}
