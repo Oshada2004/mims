@@ -17,7 +17,7 @@ exports.register = async (req, res) => {
 // Login
 exports.login = async (req, res) => {
   const { username, password } = req.body;
-  const clientIp = req.ip || req.connection.remoteAddress || '127.0.0.1';
+  const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1';
 
   try {
     const [rows] = await pool.query(
