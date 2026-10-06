@@ -45,9 +45,6 @@ body,
   z-index: 2;
 }
 
-
-/* Brand */
-
 .brand-section {
   display: flex;
   align-items: center;
@@ -83,12 +80,8 @@ body,
   letter-spacing: 0.2px;
 }
 
-
-/* Hotline */
-
 .hotline-info {
   text-align: right;
-
   font-size: 11px;
   line-height: 1.4;
 
@@ -97,15 +90,11 @@ body,
 
 .hotline-number {
   display: block;
-
   margin-top: 2px;
-
   font-size: 13px;
   font-weight: 700;
-
   color: #ffffff;
 }
-
 
 .login-main {
   flex: 1;
@@ -117,8 +106,6 @@ body,
   padding: 40px 20px;
   background: #ffffff;
 }
-
-
 
 .login-card {
   width: 100%;
@@ -159,17 +146,11 @@ body,
 
 .form-error {
   background: #fff5f0;
-
   color: #c63f14;
-
   border: 1px solid #f3c5b4;
-
   border-radius: 9px;
-
   padding: 11px 13px;
-
   margin-bottom: 18px;
-
   font-size: 12px;
 }
 
@@ -186,11 +167,6 @@ body,
   font-weight: 700;
   text-align: left;
 }
-
-
-/* =========================================================
-   INPUT
-   ========================================================= */
 
 .form-input {
   width: 100%;
@@ -237,41 +213,27 @@ body,
   padding-right: 52px;
 }
 
-
-/* Eye button */
-
 .password-toggle {
   position: absolute;
-
   right: 14px;
   top: 50%;
-
   transform: translateY(-50%);
-
   width: 32px;
   height: 32px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border: none;
   background: transparent;
-
   color: #777777;
-
   cursor: pointer;
-
   border-radius: 6px;
-
   font-size: 18px;
-
   transition: all 0.2s ease;
 }
 
 .password-toggle:hover {
   color: #f4511e;
-
   background: #fff5f0;
 }
 
@@ -282,30 +244,21 @@ body,
 .login-btn {
   width: 100%;
   height: 52px;
-
   margin-top: 5px;
-
   border: none;
   border-radius: 10px;
-
   background: #f4511e;
   color: #ffffff;
-
   font-size: 15px;
   font-weight: 700;
-
   cursor: pointer;
-
   transition: all 0.2s ease;
 }
-
 .login-btn:hover {
   background: #df4617;
-
   box-shadow:
     0 5px 15px rgba(244, 81, 30, 0.20);
 }
-
 .login-btn:active {
   transform: scale(0.99);
 }
@@ -317,51 +270,33 @@ body,
 
 .forgot-link-wrapper {
   margin-top: 22px;
-
   text-align: center;
-
   font-size: 13px;
 }
 
 .forgot-link {
   color: #3b3b3b;
-
   font-weight: 600;
-
   text-decoration: none;
-
   transition: color 0.2s ease;
 }
 
 .forgot-link:hover {
   color: #f4511e;
-
   text-decoration: underline;
 }
-
-
-/* =========================================================
-   FOOTER
-   ========================================================= */
 
 .vishwa-footer {
   width: 100%;
   min-height: 58px;
-
   background: #292929;
-
   color: #cfcfcf;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 15px 20px;
-
   border-top: 3px solid #f4511e;
-
   text-align: center;
-
   font-size: 12px;
 }
 
@@ -371,22 +306,17 @@ body,
    ========================================================= */
 
 @media (max-width: 768px) {
-
   .vishwa-header {
     height: 68px;
     min-height: 68px;
-
     padding: 0 25px;
   }
-
   .hotline-info {
     display: none;
   }
-
   .login-main {
     padding: 30px 20px;
   }
-
   .login-card {
     max-width: 400px;
   }
@@ -398,45 +328,34 @@ body,
    ========================================================= */
 
 @media (max-width: 480px) {
-
   .vishwa-header {
     padding: 0 18px;
   }
-
   .brand-logo {
     font-size: 20px;
   }
-
   .brand-sublogo {
     font-size: 14px;
     padding-left: 10px;
   }
-
   .security-badge {
     display: none;
   }
-
   .login-main {
     padding: 25px 15px;
   }
-
   .login-card {
     border-radius: 14px;
   }
-
   .login-card-header {
     padding: 22px 22px 18px;
-
     font-size: 17px;
   }
-
   .login-form {
     padding: 23px;
   }
-
   .vishwa-footer {
     min-height: 55px;
-
     font-size: 10px;
   }
 }

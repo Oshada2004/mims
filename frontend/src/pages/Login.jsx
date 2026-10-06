@@ -31,7 +31,7 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      {/* Top Header Bar */}
+   
       <header className="vishwa-header">
         <div className="brand-section">
           <div className="brand-logo">
@@ -44,7 +44,6 @@ export default function Login() {
         </div>
       </header>
 
-      {/* Main Grid */}
       <main className="login-main">
         
         <div className="login-card">
@@ -100,7 +99,6 @@ export default function Login() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="vishwa-footer">
         Microbanking & Interest Management System (MIMS) &copy; 2026. All Rights Reserved.
       </footer>
