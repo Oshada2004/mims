@@ -7,7 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(true);
   const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -23,6 +23,9 @@ export default function Login() {
         err.response?.data?.error || 
         'Invalid credentials. Please verify your username and password.'
       );
+      setUsername('');
+      setPassword('');
+      setShowPassword(true);
     }
   };
 
@@ -66,7 +69,7 @@ export default function Login() {
               <label>Password</label>
               <div className="password-wrapper">
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? "password" : "text"}
                   className="form-input"
                   placeholder="Enter Password"
                   value={password}
