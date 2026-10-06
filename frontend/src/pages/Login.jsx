@@ -1,40 +1,106 @@
 import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import './Login.css';
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     try {
       await login(username, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(
+        err.response?.data?.error || 
+        'Invalid credentials. Please verify your username and password.'
+      );
     }
   };
 
   return (
-    <div style={{ maxWidth: '350px', margin: '50px auto' }}>
-      <h2>MIMS Login</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Username / Email</label>
-          <input type="text" value={username} onChange={e => setUsername(e.target.value)} required />
+    <div className="login-container">
+      {/* Top Header Bar */}
+      <header className="vishwa-header">
+        <div className="brand-section">
+          <div className="brand-logo">
+            Arunodaya Bank <span className="brand-sublogo">MIMS</span>
+          </div>
+          <span className="security-badge">SECURE ONLINE BANKING</span>
         </div>
-        <div style={{ marginTop: '10px' }}>
-          <label>Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <div className="hotline-info">
+          Hotline: <strong className="hotline-number">072 175 2308 / 0112 300 300</strong>
         </div>
-        <button type="submit" style={{ marginTop: '15px' }}>Login</button>
-      </form>
+      </header>
+
+      {/* Main Grid */}
+      <main className="login-main">
+        
+        <div className="login-card">
+          <div className="login-card-header">User Login</div>
+
+          <form onSubmit={handleLogin} className="login-form">
+            {error && <div className="form-error">{error}</div>}
+
+            <div className="form-group">
+              <label>Username / User ID</label>
+              <input
+                type="text"
+                className="form-input"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter Username"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Password</label>
+              <div className="password-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="form-input"
+                  placeholder="Enter Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="login-btn">
+              LOG IN
+            </button>
+
+            <div className="forgot-link-wrapper">
+              <Link to="/forgot-password" className="forgot-link">
+                Forgot Password / Reset via OTP?
+              </Link>
+            </div>
+          </form>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="vishwa-footer">
+        Microbanking & Interest Management System (MIMS) &copy; 2026. All Rights Reserved.
+      </footer>
     </div>
   );
 }
