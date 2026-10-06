@@ -29,17 +29,17 @@ ON DUPLICATE KEY UPDATE
 
 INSERT INTO `STAFF_PROFILE` (`person_id`, `staff_role`, `branch_id`, `department`, `salary`)
 VALUES 
-    (101, 'ADMIN', 1, 'IT_SYSTEMS', 650000.00),
-    (102, 'Software Engineer', 2, 'OPERATIONS', 320000.00),
-    (103, 'Quality Assurance Specialist', 3, 'CUSTOMER_SERVICE', 400000.00)
+    (101, 'ADMIN', 1, 'IT', 650000.00),
+    (102, 'ADMIN', 2, 'OPERATIONS', 320000.00),
+    (103, 'ADMIN', 3, 'IT', 400000.00)
 ON DUPLICATE KEY UPDATE 
     `staff_role` = VALUES(`staff_role`);
 
 INSERT INTO `AUTH_USER` (`person_id`, `email`, `username`, `password_hash`, `user_role`, `failed_login_attempts`, `is_locked`)
 VALUES 
     (101, 'Chamath@mimsbank.lk', 'Chamath', SHA2('Chamath101123!', 256), 'ADMIN', 0, FALSE),
-    (102, 'Kamal@mimsbank.lk', 'Kamal', SHA2('Kamal102123!', 256), 'STAFF', 0, FALSE),
-    (103, 'Nimal@mimsbank.lk', 'Nimal', SHA2('Nimal103123!', 256), 'CUSTOMER', 0, FALSE)
+    (102, 'Kamal@mimsbank.lk', 'Kamal', SHA2('Kamal102123!', 256), 'ADMIN', 0, FALSE),
+    (103, 'Nimal@mimsbank.lk', 'Nimal', SHA2('Nimal103123!', 256), 'ADMIN', 0, FALSE)
 ON DUPLICATE KEY UPDATE 
     `password_hash` = VALUES(`password_hash`),
     `is_locked`     = FALSE;
