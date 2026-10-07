@@ -1,7 +1,7 @@
 DROP PROCEDURE IF EXISTS Agent_transactions_report;
 
 DELIMITER $$
-CREATE PROCEDURE Agent_transactions_report(
+CREATE PROCEDURE sp_agent_transactions_report(
     IN p_start DATE,
     IN p_end DATE
 )
@@ -46,7 +46,7 @@ BEGIN
         UNION ALL
         SELECT 1 FROM MINOR_CUSTOMER_PROFILE WHERE person_id = p_customer_id
     ) THEN
-        SIGNAL SQLSTATE '45000'
+        SIGNAL SQLSTATE '45404'
         SET MESSAGE_TEXT = 'Customer does not exist.';
     END IF;
 
@@ -187,6 +187,7 @@ BEGIN
       AND (p_account_status IS NULL OR account_status = p_account_status)
     ORDER BY account_no ASC;
 END$$
+DELIMITER ;
 
 CREATE OR REPLACE VIEW vw_rep4_monthly_interest_distribution AS
 SELECT
