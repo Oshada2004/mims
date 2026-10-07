@@ -1,9 +1,9 @@
-import { Router } from 'express';
-const router = Router();
-import { deposit, withdraw } from '../controllers/transactionController';
-import { verifyToken, authorizeRoles } from '../middleware/auth';
+const express = require('express');
+const router = express.Router();
+const { deposit, withdraw } = require('../controllers/transactionController');
+const { verifyToken, authorizeRoles } = require('../middleware/auth');
 
-router.post('/deposit',verifyToken,authorizeRoles('AGENT','ADMIN'),deposit);
-router.post('/withdraw',verifyToken,authorizeRoles('AGENT','ADMIN'),withdraw);
+router.post('/deposit', verifyToken, authorizeRoles('AGENT', 'ADMIN'), deposit);
+router.post('/withdraw', verifyToken, authorizeRoles('AGENT', 'ADMIN'), withdraw);
 
-export default router;
+module.exports = router;

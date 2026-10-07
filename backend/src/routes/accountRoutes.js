@@ -5,7 +5,7 @@ const accountController = require('../controllers/accountController');
 /**
  * @route   POST /api/accounts
  * @desc    Open a new savings account
- * @access  Agent / Admin (can be protected with auth middleware)
+ * @access  Agent / Admin 
  */
 router.post('/', accountController.openSavingsAccount);
 

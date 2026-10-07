@@ -1,11 +1,18 @@
 const db = require('../config/db');
 
-export async function deposit(req, res, next) {
-    const agentId = req.user.personId;
+const deposit = async (req, res, next) => {
+    const agentId = req.user?.personId;
     const { accountNo, amount, refText } = req.body;
 
+    if (!Number.isInteger(agentId) || agentId <= 0) {
+        return res.status(401).json({
+            success: false,
+            message: 'Please log in with a valid agent/admin account.'
+        });
+    }
+
     try {
-        const [results] = await query(
+        const [results] = await db.query(
             `CALL sp_process_deposit(?,?,?,?,@p_txn_id,@p_new_balance);
             SELECT @p_txn_id AS txnId,@p_new_balance AS newBalance;`,
             [accountNo, agentId, amount, refText || 'Manual Deposit']
@@ -23,14 +30,21 @@ export async function deposit(req, res, next) {
         }
         next(err);
     }
-}
+};
 
-export async function withdraw(req, res, next) {
-    const agentId = req.user.personId;
+const withdraw = async (req, res, next) => {
+    const agentId = req.user?.personId;
     const { accountNo, amount, refText } = req.body;
 
+    if (!Number.isInteger(agentId) || agentId <= 0) {
+        return res.status(401).json({
+            success: false,
+            message: 'Please log in with a valid agent/admin account.'
+        });
+    }
+
     try {
-        const [results] = await query(
+        const [results] = await db.query(
             `CALL sp_process_withdrawal(?,?,?,?,@p_txn_id,@p_new_balance);
             SELECT @p_txn_id AS txnId,@p_new_balance AS newBalance;`,
             [accountNo, agentId, amount, refText || 'Manual Withdrawal']
@@ -48,4 +62,9 @@ export async function withdraw(req, res, next) {
         }
         next(err);
     }
-}
+};
+
+module.exports = {
+    deposit,
+    withdraw
+};
