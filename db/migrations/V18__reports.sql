@@ -188,6 +188,66 @@ BEGIN
     ORDER BY account_no ASC;
 END$$
 
+CREATE OR REPLACE VIEW vw_rep4_monthly_interest_distribution AS
+SELECT
+    YEAR(t.txn_timestamp) AS txn_year,
+    MONTH(t.txn_timestamp) AS txn_month,
+    DATE_FORMAT(t.txn_timestamp, '%Y-%m') AS year_month_label,
+    DATE_FORMAT(t.txn_timestamp, '%M %Y') AS month_year_name,
+    sa.plan_code,
+    sap.plan_name AS account_type,
+    COUNT(DISTINCT t.sav_acc_no) AS accounts_receiving_interest,
+    COUNT(t.txn_id) AS total_interest_payouts,
+    COALESCE(SUM(CASE WHEN t.txn_type = 'SAVINGS_INTEREST' THEN t.amount ELSE 0.00 END), 0.00) AS total_savings_interest,
+    COALESCE(SUM(CASE WHEN t.txn_type = 'FD_INTEREST' THEN t.amount ELSE 0.00 END), 0.00) AS total_fd_interest,
+    COALESCE(SUM(t.amount), 0.00) AS total_interest_paid
+FROM TRANSACTION_LOG t
+JOIN SAVINGS_ACCOUNT sa
+    ON t.sav_acc_no = sa.account_no
+JOIN SAV_ACC_PLAN sap
+    ON sa.plan_code = sap.plan_code
+WHERE t.txn_type IN ('SAVINGS_INTEREST', 'FD_INTEREST')
+GROUP BY
+    YEAR(t.txn_timestamp),
+    MONTH(t.txn_timestamp),
+    DATE_FORMAT(t.txn_timestamp, '%Y-%m'),
+    DATE_FORMAT(t.txn_timestamp, '%M %Y'),
+    sa.plan_code,
+    sap.plan_name;
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS sp_get_monthly_interest_distribution$$
+
+CREATE PROCEDURE sp_get_monthly_interest_distribution(
+    IN p_year INT,
+    IN p_month INT,
+    IN p_plan_code VARCHAR(10)
+)
+READS SQL DATA
+BEGIN
+    SELECT
+        txn_year,
+        txn_month,
+        year_month_label,
+        month_year_name,
+        plan_code,
+        account_type,
+        accounts_receiving_interest,
+        total_interest_payouts,
+        total_savings_interest,
+        total_fd_interest,
+        total_interest_paid
+    FROM vw_rep4_monthly_interest_distribution
+    WHERE (p_year IS NULL OR txn_year = p_year)
+      AND (p_month IS NULL OR txn_month = p_month)
+      AND (p_plan_code IS NULL OR plan_code = p_plan_code)
+    ORDER BY
+        txn_year DESC,
+        txn_month DESC,
+        plan_code ASC;
+END$$
+
 DELIMITER ;
 
 
