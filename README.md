@@ -33,6 +33,12 @@ To access the MySQL database from the running container:
 	docker compose exec database mysql -u root -pabc123
 	```
 
+docker compose down -v && \
+docker compose up -d database && \
+docker compose exec database sh -c 'until mysql -u root -pabc123 -e "USE mims_db;" >/dev/null 2>&1; do sleep 2; done' && \
+docker compose run --rm flyway migrate -locations=filesystem:/flyway/sql/migrations,filesystem:/flyway/sql/seeds
+
+
 Stop the services with `docker compose down`. To also remove the database
 volume and reset the database, use `docker compose down -v`.
 
