@@ -4,7 +4,7 @@ exports.getActiveFDReport = async (req, res, next) => {
     try {
         const [results] = await db.query(
             'CALL sp_get_active_fd_schedule(?)',
-    [null]
+            [null]
         );
         const rows = results[0];
         return res.status(200).json({

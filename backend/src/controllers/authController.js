@@ -44,7 +44,7 @@ exports.login = async (req, res) => {
 
 // Get Profile Context
 exports.getProfile = async (req, res) => {
-  const sessionId = req.user?.sessionId || (req.headers['authorization'] ? req.headers['authorization'].replace(/^Bearer\s+/i, '').trim() : null);
+  const sessionId = req.headers['authorization'];
   if (!sessionId) return res.status(401).json({ error: 'Session ID required' });
 
   try {
@@ -52,36 +52,27 @@ exports.getProfile = async (req, res) => {
       `SELECT fn_get_auth_user_context(?) AS user_context`,
       [sessionId]
     );
-    const userContext = rows[0]?.user_context;
+    const userContext = rows[0].user_context;
 
-    if (userContext && userContext.error) {
+    if (userContext.error) {
       return res.status(401).json({ error: userContext.error });
     }
 
-    res.json({ user: userContext || req.user });
+    res.json({ user: userContext });
   } catch (error) {
-    if (req.user) {
-      return res.json({ user: req.user });
-    }
     res.status(500).json({ error: error.message });
   }
 };
 
 // Logout
 exports.logout = async (req, res) => {
-  const sessionId = req.user?.sessionId || (req.headers['authorization'] ? req.headers['authorization'].replace(/^Bearer\s+/i, '').trim() : null);
-  if (!sessionId) return res.status(400).json({ error: 'Session ID required' });
-  const clientIp = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+  const sessionId = req.headers['authorization'];
+  const clientIp = req.ip || '127.0.0.1';
 
   try {
     await pool.query(`CALL sp_logout_user(?, ?)`, [sessionId, clientIp]);
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
-    try {
-      await pool.query(`UPDATE USER_SESSION SET is_active = FALSE WHERE session_id = ?`, [sessionId]);
-      return res.json({ message: 'Logged out successfully' });
-    } catch (fallbackError) {
-      return res.status(400).json({ error: error.sqlMessage || error.message });
-    }
+    res.status(400).json({ error: error.sqlMessage || error.message });
   }
-};
+};

@@ -29,7 +29,7 @@ exports.openFD = async (req, res, next) => {
             message: 'Term must be 6M, 1Y, or 3Y.'
         });
     }
-        const principalText =
+    const principalText =
         typeof principal === 'string'
             ? principal.trim()
             : typeof principal === 'number'
