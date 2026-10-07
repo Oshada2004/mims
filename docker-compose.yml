@@ -27,8 +27,10 @@ services:
       FLYWAY_USER: ${DB_USER}
       FLYWAY_PASSWORD: ${DB_PASSWORD}
       FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_LOCATIONS: "filesystem:/flyway/sql/migrations,filesystem:/flyway/sql/seeds"
     volumes:
-      - ./db/migrations:/flyway/sql:ro
+      - ./db/migrations:/flyway/sql/migrations:ro
+      - ./db/seeds:/flyway/sql/seeds:ro
     depends_on:
       database:
         condition: service_healthy
