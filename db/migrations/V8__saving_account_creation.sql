@@ -23,6 +23,11 @@ BEGIN
         RESIGNAL;
     END;
 
+    IF p_agent_person_id IS NULL OR p_agent_person_id <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'A valid agent ID is required.';
+    END IF;
+
     SELECT dob INTO v_dob FROM PERSON WHERE person_id = p_customer_id;
     IF v_dob IS NULL THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Opening Failed: Customer does not exist.';

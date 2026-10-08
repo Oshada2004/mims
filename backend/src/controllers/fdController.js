@@ -29,7 +29,7 @@ exports.openFD = async (req, res, next) => {
             message: 'Term must be 6M, 1Y, or 3Y.'
         });
     }
-        const principalText =
+    const principalText =
         typeof principal === 'string'
             ? principal.trim()
             : typeof principal === 'number'
@@ -107,11 +107,11 @@ exports.closeEarly = async (req, res, next) => {
     if (
         typeof fdId !== 'string' ||
         fdId.trim() === '' ||
-        fdId.length > 15
+        fdId.length > 20
     ) {
         return res.status(400).json({
             success: false,
-            message: 'A fixed deposit ID of up to 15 characters is required.'
+            message: 'A fixed deposit ID of up to 20 characters is required.'
         });
     }
 
