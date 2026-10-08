@@ -49,16 +49,31 @@ exports.getProfile = async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT fn_get_auth_user_context(?) AS user_context`,
+      `SELECT
+         au.person_id,
+         au.email,
+         au.username,
+         au.user_role,
+         p.first_name,
+         p.last_name,
+         sp.staff_role,
+         sp.branch_id
+       FROM USER_SESSION us
+       JOIN AUTH_USER au ON au.person_id = us.person_id
+       JOIN PERSON p ON p.person_id = au.person_id
+       LEFT JOIN STAFF_PROFILE sp ON sp.person_id = au.person_id
+       WHERE us.session_id = ?
+         AND us.is_active = TRUE
+         AND us.expires_at > NOW()
+       LIMIT 1`,
       [sessionId]
     );
-    const userContext = rows[0].user_context;
 
-    if (userContext.error) {
-      return res.status(401).json({ error: userContext.error });
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
     }
 
-    res.json({ user: userContext });
+    res.json({ user: rows[0] });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

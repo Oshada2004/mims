@@ -23,9 +23,14 @@ provides a basic database connection check.
 	docker compose up --build
 	```
 
+   This starts MySQL, Flyway migrations/seeds, the backend, and the Vite
+   frontend. You do not need to install dependencies locally or start either JavaScript
+   service separately. The frontend installs its Linux-native optional
+   dependencies when the container starts.
+
 3. Flyway automatically applies pending migrations from `db/migrations`.
-   Open http://localhost:3000. The backend test endpoint is
-	http://localhost:5000/api/test.
+   Open http://localhost:5173. The backend API is available at
+	http://localhost:5000.
 
 To access the MySQL database from the running container:
 
