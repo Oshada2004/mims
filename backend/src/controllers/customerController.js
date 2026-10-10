@@ -1,102 +1,229 @@
+
 const pool = require('../config/db');
 
-// Single step: Onboard Adult Customer
-exports.createAdultCustomer = async (req, res) => {
-  const {
-    first_name, last_name, dob, phone_number, address, postal_code,
-    nic, tax_id, agent_person_id, occupation, monthly_income
-  } = req.body;
-
-  try {
-    const [rows] = await pool.query(
-      `CALL sp_create_adult_customer(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        first_name, last_name, dob, phone_number, address, postal_code,
-        nic, tax_id || null, agent_person_id || null, occupation || null, monthly_income || 0.00
-      ]
-    );
-
-    const personId = rows[0][0].person_id;
-    res.status(201).json({
-      message: 'Adult customer onboarded successfully',
-      customer_person_id: personId
-    });
-  } catch (error) {
-    res.status(400).json({ error: error.sqlMessage || error.message });
-  }
+const CUSTOMER_PROCEDURES = {
+  adult: 'sp_create_adult_customer',
+  minorNewGuardian: 'sp_create_minor_with_new_guardian',
+  minorExistingGuardian: 'sp_create_minor_with_existing_guardian'
 };
 
-// Single step: Onboard Minor Customer with a NEW Guardian
-exports.createMinorWithNewGuardian = async (req, res) => {
-  const {
-    minor_first_name, minor_last_name, minor_dob, minor_phone_number, minor_address, minor_postal_code, birth_cert_no,
-    guardian_first_name, guardian_last_name, guardian_dob, guardian_nic, guardian_phone_number, guardian_address, guardian_postal_code,
-    relation, agent_person_id
-  } = req.body;
+// Normalize SQL parameter names and JSON keys.
+// Example: p_first_name -> firstname
+function normalizeKey(value) {
+  return String(value)
+    .replace(/^(p|in|input)_/i, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase();
+}
 
-  try {
-    const [rows] = await pool.query(
-      `CALL sp_create_minor_with_new_guardian(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        minor_first_name, minor_last_name, minor_dob, minor_phone_number, minor_address, minor_postal_code, birth_cert_no,
-        guardian_first_name, guardian_last_name, guardian_dob, guardian_nic, guardian_phone_number, guardian_address, guardian_postal_code,
-        relation, agent_person_id || null
-      ]
-    );
-
-    const result = rows[0][0];
-    res.status(201).json({
-      message: 'Minor customer and new guardian onboarded successfully',
-      minor_person_id: result.minor_person_id,
-      guardian_person_id: result.guardian_person_id
-    });
-  } catch (error) {
-    res.status(400).json({ error: error.sqlMessage || error.message });
+// Flatten nested request bodies, such as { guardian: { first_name: "..." } }.
+function flattenObject(value, prefix = '', result = {}) {
+  if (
+    value === null ||
+    typeof value !== 'object' ||
+    Array.isArray(value)
+  ) {
+    if (prefix) result[prefix] = value;
+    return result;
   }
-};
 
-// Single step: Onboard Minor Customer linked to an existing Guardian by NIC
-exports.createMinorWithExistingGuardian = async (req, res) => {
-  const {
-    minor_first_name, minor_last_name, minor_dob, minor_phone_number, minor_address, minor_postal_code, birth_cert_no,
-    guardian_nic, relation, agent_person_id
-  } = req.body;
+  for (const [key, item] of Object.entries(value)) {
+    const path = prefix ? `${prefix}_${key}` : key;
 
-  try {
-    // Look up guardian by NIC using the stored procedure
-    const [guardianRows] = await pool.query(`CALL sp_find_guardian_by_nic(?)`, [guardian_nic]);
-    const guardian = guardianRows[0][0];
+    if (
+      item !== null &&
+      typeof item === 'object' &&
+      !Array.isArray(item)
+    ) {
+      flattenObject(item, path, result);
+    } else {
+      result[path] = item;
+    }
+  }
 
-    if (!guardian) {
-      return res.status(404).json({ error: 'Guardian NIC not found or person does not qualify as an adult guardian.' });
+  return result;
+}
+
+// ignoring underscores, capitalization, and common prefixes.
+async function callCustomerProcedure(procedureName, body) {
+  const [parameters] = await pool.query(
+    `SELECT PARAMETER_NAME, PARAMETER_MODE, ORDINAL_POSITION
+       FROM INFORMATION_SCHEMA.PARAMETERS
+      WHERE SPECIFIC_SCHEMA = DATABASE()
+        AND SPECIFIC_NAME = ?
+        AND ROUTINE_TYPE = 'PROCEDURE'
+      ORDER BY ORDINAL_POSITION`,
+    [procedureName]
+  );
+
+  if (parameters.length === 0) {
+    throw new Error(
+      `Stored procedure "${procedureName}" was not found, or its parameters are not visible.`
+    );
+  }
+
+  const inputParameters = parameters.filter(
+    (parameter) =>
+      parameter.PARAMETER_MODE === 'IN' ||
+      parameter.PARAMETER_MODE === 'INOUT'
+  );
+
+  const suppliedValues = flattenObject(body);
+  const normalizedValues = new Map();
+
+  for (const [key, value] of Object.entries(suppliedValues)) {
+    normalizedValues.set(normalizeKey(key), value);
+  }
+
+  const values = [];
+
+  for (const parameter of inputParameters) {
+    const key = normalizeKey(parameter.PARAMETER_NAME);
+
+    if (!normalizedValues.has(key)) {
+      throw new Error(
+        `Missing request field for stored procedure parameter "${parameter.PARAMETER_NAME}".`
+      );
     }
 
-    const [rows] = await pool.query(
-      `CALL sp_create_minor_with_existing_guardian(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        minor_first_name, minor_last_name, minor_dob, minor_phone_number, minor_address, minor_postal_code,
-        birth_cert_no, guardian.person_id, relation, agent_person_id || null
-      ]
+    values.push(normalizedValues.get(key));
+  }
+
+  const placeholders = inputParameters.map(() => '?').join(', ');
+  const sql = `CALL ${procedureName}(${placeholders})`;
+
+  const [result] = await pool.query(sql, values);
+
+  return result;
+}
+
+function handleControllerError(res, error, operation) {
+  console.error(`${operation} failed:`, error.message);
+
+  if (
+    error.message.startsWith('Missing request field') ||
+    error.message.includes('was not found')
+  ) {
+    return res.status(400).json({
+      error: error.message
+    });
+  }
+
+  return res.status(500).json({
+    error: `Unable to ${operation.toLowerCase()}.`
+  });
+}
+
+// POST /api/customers/adult
+exports.createAdultCustomer = async (req, res) => {
+  try {
+    const result = await callCustomerProcedure(
+      CUSTOMER_PROCEDURES.adult,
+      req.body
     );
 
-    const result = rows[0][0];
-    res.status(201).json({
-      message: 'Minor customer onboarded with existing guardian successfully',
-      minor_person_id: result.minor_person_id,
-      guardian_person_id: result.guardian_person_id
+    return res.status(201).json({
+      message: 'Adult customer registration request completed.',
+      result
     });
   } catch (error) {
-    res.status(400).json({ error: error.sqlMessage || error.message });
+    return handleControllerError(
+      res,
+      error,
+      'Register adult customer'
+    );
   }
 };
 
-// Query active accounts by customer person_id
-exports.getCustomerAccounts = async (req, res) => {
-  const { personId } = req.params;
+// POST /api/customers/minor/new-guardian
+exports.createMinorWithNewGuardian = async (req, res) => {
   try {
-    const [rows] = await pool.query(`SELECT get_accounts_by_person_id(?) AS accounts`, [personId]);
-    res.json({ accounts: rows[0].accounts });
+    const result = await callCustomerProcedure(
+      CUSTOMER_PROCEDURES.minorNewGuardian,
+      req.body
+    );
+
+    return res.status(201).json({
+      message: 'Minor customer registration request completed.',
+      result
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return handleControllerError(
+      res,
+      error,
+      'Register minor with new guardian'
+    );
+  }
+};
+
+// POST /api/customers/minor/existing-guardian
+exports.createMinorWithExistingGuardian = async (req, res) => {
+  try {
+    const result = await callCustomerProcedure(
+      CUSTOMER_PROCEDURES.minorExistingGuardian,
+      req.body
+    );
+
+    return res.status(201).json({
+      message: 'Minor customer registration request completed.',
+      result
+    });
+  } catch (error) {
+    return handleControllerError(
+      res,
+      error,
+      'Register minor with existing guardian'
+    );
+  }
+};
+
+// GET /api/customers/:personId/accounts
+exports.getCustomerAccounts = async (req, res) => {
+  const requestedPersonId = Number(req.params.personId);
+  const authenticatedPersonId = Number(req.user.person_id);
+
+  if (
+    !Number.isSafeInteger(requestedPersonId) ||
+    requestedPersonId <= 0
+  ) {
+    return res.status(400).json({
+      error: 'A valid customer ID is required.'
+    });
+  }
+
+  if (
+    req.user.user_role === 'CUSTOMER' &&
+    requestedPersonId !== authenticatedPersonId
+  ) {
+    return res.status(403).json({
+      error: 'You can only access your own accounts.'
+    });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT get_accounts_by_person_id(?) AS accounts',
+      [requestedPersonId]
+    );
+
+    let accounts = rows[0]?.accounts ?? [];
+
+    if (typeof accounts === 'string') {
+      try {
+        accounts = JSON.parse(accounts);
+      } catch {
+      }
+    }
+
+    return res.json({ accounts });
+  } catch (error) {
+    console.error(
+      'Customer account lookup failed:',
+      error.message
+    );
+
+    return res.status(500).json({
+      error: 'Unable to retrieve customer accounts.'
+    });
   }
 };
