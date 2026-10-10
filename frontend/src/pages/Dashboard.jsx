@@ -182,15 +182,12 @@ export default function Dashboard() {
           </div>
 
           <div className="topbar-user">
-            <div className="user-avatar">
-              <UserRound size={20} />
-            </div>
-
+            
             <div className="user-meta">
               <strong>{displayName}</strong>
-              <span>
-                {user?.staff_role || user?.user_role}
-              </span>
+            </div>
+            <div className="user-avatar">
+              <UserRound size={20} />
             </div>
           </div>
         </header>

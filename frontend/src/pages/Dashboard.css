@@ -173,20 +173,21 @@
 
 .dashboard-topbar {
   min-height: 88px;
-  padding: 17px 54px;
+  padding: 17px 8.5%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
   background: #ffffff;
   border-bottom: 1px solid var(--bank-border);
+  
 }
 
 .topbar-left {
   display: flex;
   align-items: center;
   gap: 12px;
-  
+
 }
 
 .breadcrumb {
@@ -209,6 +210,7 @@
   display: flex;
   align-items: center;
   gap: 11px;
+ 
 }
 
 .user-avatar {
@@ -227,7 +229,7 @@
 }
 
 .user-meta strong {
-  font-size: 13px;
+  font-size: 18px;
 }
 
 .user-meta span {
