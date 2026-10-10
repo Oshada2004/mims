@@ -27,8 +27,10 @@ services:
       FLYWAY_USER: ${DB_USER}
       FLYWAY_PASSWORD: ${DB_PASSWORD}
       FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_LOCATIONS: "filesystem:/flyway/sql/migrations,filesystem:/flyway/sql/seeds"
     volumes:
-      - ./db/migrations:/flyway/sql:ro
+      - ./db/migrations:/flyway/sql/migrations:ro
+      - ./db/seeds:/flyway/sql/seeds:ro
     depends_on:
       database:
         condition: service_healthy
@@ -45,6 +47,17 @@ services:
       - backend_node_modules:/app/node_modules
     ports:
       - "5000:5000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:5000/', response => process.exit(response.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     depends_on:
       flyway:
         condition: service_completed_successfully
@@ -54,19 +67,19 @@ services:
     build: ./frontend
     container_name: mims_frontend
     restart: always
-    command: npm start
+    command: sh -c "npm install --include=optional --no-package-lock && npm run dev -- --host 0.0.0.0"
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
     ports:
-      - "3000:3000"
+      - "5173:5173"
     environment:
-      REACT_APP_API_URL: http://localhost:5000
+      VITE_API_URL: http://localhost:5000/api
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   db_data:
