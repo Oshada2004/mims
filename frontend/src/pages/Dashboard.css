@@ -246,13 +246,14 @@
 .welcome-section {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: left;
   gap: 20px;
   padding: 27px 30px;
   background: #ffffff;
   border: 1px solid var(--bank-border);
   border-radius: 17px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.025);
+  text-align: left;
 }
 
 .eyebrow {
@@ -260,7 +261,7 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1.3px;
-  
+  text-align: left;
 }
 
 .welcome-section h2 {
@@ -282,6 +283,7 @@
   color: var(--bank-muted);
   font-size: 13px;
   line-height: 1.6;
+  text-align: left;
 }
 
 .welcome-icon {
@@ -301,21 +303,26 @@
 
 .section-heading {
   display: flex;
-  align-items: center;
+  align-items: left;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 19px;
+  text-align: left;
 }
 
 .section-heading h3 {
   margin: 0 0 6px;
   font-size: 18px;
+  margin-left: 26px;
 }
 
 .section-heading p {
-  margin: 0;
+  margin: 0 ;
   color: var(--bank-muted);
   font-size: 12px;
+  text-align: right;
+  margin-left:auto;
+  align-items: center;
 }
 
 .role-pill {
@@ -325,6 +332,9 @@
   border-radius: 20px;
   font-size: 10px;
   font-weight: 700;
+  text-align: right;
+  margin-left: auto;
+  margin-right: 30px;
 }
 
 .overview-grid {

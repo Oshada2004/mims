@@ -217,12 +217,7 @@ export default function Dashboard() {
           {activePage === 'overview' && (
             <section className="dashboard-section">
               <div className="section-heading">
-                <div>
-                  <h3>Workspace overview</h3>
-                  <p>
-                    Your available banking operations and tools.
-                  </p>
-                </div>
+                
 
                 <span className="role-pill">
                   {user?.user_role || 'USER'}
