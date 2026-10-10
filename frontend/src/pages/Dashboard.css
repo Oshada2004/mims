@@ -31,9 +31,11 @@
   display: flex;
   flex-direction: column;
   padding: 25px 16px 18px;
+  position:fixed;
 }
 
 .sidebar-brand {
+  
   display: flex;
   align-items: center;
   gap: 12px;
@@ -164,6 +166,7 @@
 }
 
 .dashboard-main {
+  margin-left: 255px;
   min-width: 0;
   flex: 1;
 }
