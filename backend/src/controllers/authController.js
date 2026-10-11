@@ -1,5 +1,11 @@
 const pool = require('../config/db');
 
+function getSessionId(req) {
+  return (
+    req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.headers['x-session-id']
+  );
+}
+
 // Register Credentials
 exports.register = async (req, res) => {
   const { person_id, email, username, password, user_role } = req.body;
@@ -44,7 +50,7 @@ exports.login = async (req, res) => {
 
 // Get Profile Context
 exports.getProfile = async (req, res) => {
-  const sessionId = req.headers['authorization'];
+  const sessionId = getSessionId(req);
   if (!sessionId) return res.status(401).json({ error: 'Session ID required' });
 
   try {
@@ -57,11 +63,13 @@ exports.getProfile = async (req, res) => {
          p.first_name,
          p.last_name,
          sp.staff_role,
-         sp.branch_id
+         sp.branch_id,
+         b.branch_name
        FROM USER_SESSION us
        JOIN AUTH_USER au ON au.person_id = us.person_id
        JOIN PERSON p ON p.person_id = au.person_id
        LEFT JOIN STAFF_PROFILE sp ON sp.person_id = au.person_id
+       LEFT JOIN BRANCH b ON b.branch_id = sp.branch_id
        WHERE us.session_id = ?
          AND us.is_active = TRUE
          AND us.expires_at > NOW()
@@ -81,7 +89,7 @@ exports.getProfile = async (req, res) => {
 
 // Logout
 exports.logout = async (req, res) => {
-  const sessionId = req.headers['authorization'];
+  const sessionId = getSessionId(req);
   const clientIp = req.ip || '127.0.0.1';
 
   try {
