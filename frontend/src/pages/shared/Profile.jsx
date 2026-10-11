@@ -1,59 +1,38 @@
-import { Plus } from 'lucide-react';
 import Alert from '../../components/ui/Alert';
-import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import PageHeader from '../../components/ui/PageHeader';
-import Table from '../../components/ui/Table';
+import { ROLE_LABELS } from '../../constants/navigation';
+import { useAuth } from '../../context/AuthContext';
 import '../Pages.css';
 
-const BRANCH_COLUMNS = [
-  { key: 'branch_id', header: 'ID' },
-  { key: 'name', header: 'Branch' },
-  { key: 'city', header: 'City' },
-  { key: 'manager', header: 'Manager' },
-];
+export default function Profile() {
+  const { user } = useAuth();
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
 
-const SAVINGS_PLAN_COLUMNS = [
-  { key: 'plan_code', header: 'Plan' },
-  { key: 'min_age', header: 'Min age' },
-  { key: 'min_balance', header: 'Min balance' },
-  { key: 'interest_rate', header: 'Interest rate', align: 'right' },
-];
+  const details = [
+    { label: 'Full name', value: fullName },
+    { label: 'Username', value: user.username },
+    { label: 'Email', value: user.email },
+    { label: 'Role', value: <Badge variant="accent">{ROLE_LABELS[user.role] ?? user.role}</Badge> },
+    { label: 'Staff role', value: user.staff_role },
+    { label: 'Branch', value: user.branch_name },
+  ].filter((detail) => detail.value !== null && detail.value !== undefined && detail.value !== '');
 
-const FD_PLAN_COLUMNS = [
-  { key: 'term_code', header: 'Term' },
-  { key: 'months', header: 'Months' },
-  { key: 'interest_rate', header: 'Interest rate', align: 'right' },
-];
-
-export default function BankManagement() {
   return (
     <div className="page">
-      <PageHeader title="Bank management" description="Branches, savings plans and fixed deposit plans." />
-      <Alert>This page will let administrators manage branches and the bank&apos;s savings and FD plans.</Alert>
+      <PageHeader title="Profile" description="Your account details." />
+      <Alert>This page will let you update your contact details. For now it is read-only.</Alert>
 
-      <Card
-        title="Branches"
-        actions={
-          <Button variant="secondary" size="sm" icon={Plus}>
-            Add branch
-          </Button>
-        }
-      >
-        <Table columns={BRANCH_COLUMNS} rows={[]} emptyMessage="No branches loaded yet." caption="Branches" />
-      </Card>
-
-      <Card title="Savings plans">
-        <Table
-          columns={SAVINGS_PLAN_COLUMNS}
-          rows={[]}
-          emptyMessage="No savings plans loaded yet."
-          caption="Savings plans"
-        />
-      </Card>
-
-      <Card title="FD plans">
-        <Table columns={FD_PLAN_COLUMNS} rows={[]} emptyMessage="No FD plans loaded yet." caption="FD plans" />
+      <Card title="Account details">
+        <dl className="detail-list">
+          {details.map((detail) => (
+            <div key={detail.label} className="detail-list__row">
+              <dt>{detail.label}</dt>
+              <dd>{detail.value}</dd>
+            </div>
+          ))}
+        </dl>
       </Card>
     </div>
   );

@@ -24,11 +24,13 @@ exports.verifySession = async (req, res, next) => {
          p.last_name,
          sp.staff_role,
          sp.branch_id,
-         sp.department
+         sp.department,
+         b.branch_name
        FROM USER_SESSION s
        JOIN AUTH_USER u ON u.person_id = s.person_id
        JOIN PERSON p ON p.person_id = s.person_id
        LEFT JOIN STAFF_PROFILE sp ON sp.person_id = s.person_id
+       LEFT JOIN BRANCH b ON b.branch_id = sp.branch_id
        WHERE s.session_id = ?
          AND s.is_active = 1
          AND s.expires_at > NOW()
