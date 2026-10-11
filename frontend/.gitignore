@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Lockfile is generated inside Docker (Linux); a macOS lockfile breaks native bindings
+package-lock.json
