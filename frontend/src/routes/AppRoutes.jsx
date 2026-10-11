@@ -7,6 +7,15 @@ import ProtectedRoute from './ProtectedRoute';
 
 import Login from '../pages/auth/Login';
 import Signup from '../pages/auth/Signup';
+import AdminDashboard from '../pages/admin/AdminDashboard';
+import NotFound from '../pages/shared/NotFound';
+import Unauthorized from '../pages/shared/Unauthorized';
+import BankManagement from '../pages/admin/BankManagement';
+import AgentManagement from '../pages/admin/AgentManagement';
+import CustomerManagement from '../pages/admin/CustomerManagement';
+import Profile from '../pages/shared/Profile';
+import Settings from '../pages/shared/Settings';
+
 
 export default function AppRoutes() {
   const { user, loading } = useAuth();
@@ -26,6 +35,11 @@ export default function AppRoutes() {
         <Route element={<DashboardLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="banks" element={<BankManagement />} />
+          <Route path="agents" element={<AgentManagement />} />
+          <Route path="customers" element={<CustomerManagement />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Route>
 
