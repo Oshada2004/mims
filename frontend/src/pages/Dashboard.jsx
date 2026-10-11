@@ -17,12 +17,14 @@ import {
 } from 'lucide-react';
 
 import { AuthContext } from '../context/AuthContext';
+import { useBankMetadata } from '../context/BankContext';
 import './Dashboard.css';
 
 export default function Dashboard() {
   const { user, logout } = useContext(AuthContext);
+  const { metadata, loading: metadataLoading, error: metadataError } = useBankMetadata();
 
-  const [activePage, setActivePage] = useState('overview');
+  const [activePage, setActivePage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const role = user?.user_role;
@@ -37,8 +39,8 @@ export default function Dashboard() {
 
   const navigation = [
     {
-      id: 'overview',
-      label: 'Overview',
+      id: 'dashboard',
+      label: 'Dashboard',
       icon: LayoutDashboard,
       visible: true
     },
@@ -94,8 +96,8 @@ export default function Dashboard() {
           </div>
 
           <div>
-            <h2>Arunodaya</h2>
-            <span>Banking MIMS</span>
+            <h2>{metadataLoading ? 'Loading...' : metadata?.bank_name || 'Bank'}</h2>
+            <span>{metadata?.motto || metadataError || 'Banking MIMS'}</span>
           </div>
 
           <button
@@ -168,11 +170,11 @@ export default function Dashboard() {
 
             <div>
               <span className="breadcrumb">
-                Arunodaya Bank / MIMS
+                {metadata?.bank_name || 'Bank'} / MIMS
               </span>
 
               <h1 className="topbar-title">
-                {activePage === 'overview'
+                {activePage === 'dashboard'
                   ? 'Dashboard'
                   : navigation.find(
                       item => item.id === activePage
@@ -196,7 +198,7 @@ export default function Dashboard() {
           <section className="welcome-section">
             <div>
               <span className="eyebrow">
-                ARUNODAYA BANK · MIMS
+                {(metadata?.bank_name || 'BANK').toUpperCase()} · MIMS
               </span>
 
               <h2 className='welcome'>Welcome back, {displayName}</h2>
@@ -211,7 +213,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {activePage === 'overview' && (
+          {activePage === 'dashboard' && (
             <section className="dashboard-section">
               <div className="section-heading">
                 
@@ -221,13 +223,13 @@ export default function Dashboard() {
                 </span>
               </div>
 
-              <div className="overview-grid">
+              <div className="dashboard-grid">
                 {isAdmin && (
                   <button
-                    className="overview-card"
+                    className="dashboard-card"
                     onClick={() => selectPage('staff')}
                   >
-                    <div className="overview-icon">
+                    <div className="dashboard-icon">
                       <Building2 size={23} />
                     </div>
 
@@ -249,12 +251,12 @@ export default function Dashboard() {
 
                 {(isStaff || isAdmin) && (
                   <button
-                    className="overview-card"
+                    className="dashboard-card"
                     onClick={() =>
                       selectPage(isStaff ? 'add-customer' : 'customers')
                     }
                   >
-                    <div className="overview-icon">
+                    <div className="dashboard-icon">
                       <Users size={23} />
                     </div>
 
@@ -276,10 +278,10 @@ export default function Dashboard() {
 
                 {isCustomer && (
                   <button
-                    className="overview-card"
+                    className="dashboard-card"
                     onClick={() => selectPage('accounts')}
                   >
-                    <div className="overview-icon">
+                    <div className="dashboard-icon">
                       <Wallet size={23} />
                     </div>
 
@@ -299,8 +301,8 @@ export default function Dashboard() {
                   </button>
                 )}
 
-                <div className="overview-card information-card">
-                  <div className="overview-icon">
+                <div className="dashboard-card information-card">
+                  <div className="dashboard-icon">
                     <ShieldCheck size={23} />
                   </div>
 
@@ -371,11 +373,10 @@ export default function Dashboard() {
 
           <footer className="dashboard-footer">
             <span>
-              © 2026 Arunodaya Bank · Microbanking & Interest
-              Management System
+              © 2026 {metadata?.bank_name || 'Bank'} · {metadata?.motto || 'Microbanking & Interest Management System'}
             </span>
 
-            <span>Secure Banking Workspace</span>
+            <span>{metadata?.contact_email || metadataError || 'Secure Banking Workspace'}</span>
           </footer>
         </div>
       </main>

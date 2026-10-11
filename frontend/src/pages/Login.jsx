@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
 import { Eye, EyeOff } from "lucide-react";
+import { useBankMetadata } from '../context/BankContext';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -10,6 +11,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(true);
   const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
+  const { metadata, loading: metadataLoading, error: metadataError } = useBankMetadata();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -35,12 +37,12 @@ export default function Login() {
       <header className="vishwa-header">
         <div className="brand-section">
           <div className="brand-logo">
-            Arunodaya Bank <span className="brand-sublogo">MIMS</span>
+            {metadataLoading ? 'Loading...' : metadata?.bank_name || 'Bank'}
           </div>
           <span className="security-badge">SECURE ONLINE BANKING</span>
         </div>
         <div className="hotline-info">
-          Hotline: <strong className="hotline-number">072 175 2308 / 0112 300 300</strong>
+          {metadata?.contact_email || metadataError || 'Contact unavailable'}
         </div>
       </header>
 
@@ -100,7 +102,7 @@ export default function Login() {
       </main>
 
       <footer className="vishwa-footer">
-        Microbanking & Interest Management System (MIMS) &copy; 2026. All Rights Reserved.
+        {metadata?.motto || 'Microbanking & Interest Management System (MIMS)'} &copy; 2026. All Rights Reserved.
       </footer>
     </div>
   );
