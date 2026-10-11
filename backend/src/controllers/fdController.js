@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
 exports.openFD = async (req, res, next) => {
-    const agentId = req.user?.personId;
+    const agentId = req.user?.person_id;
 
     if (!Number.isInteger(agentId) || agentId <= 0) {
         return res.status(401).json({
@@ -94,7 +94,7 @@ exports.openFD = async (req, res, next) => {
     }
 };
 exports.closeEarly = async (req, res, next) => {
-    const agentId = req.user?.personId;
+    const agentId = req.user?.person_id;
     const fdId = req.params.id;
 
     if (!Number.isInteger(agentId) || agentId <= 0) {

@@ -2,22 +2,34 @@ const express = require('express');
 const router = express.Router();
 
 const fdController = require('../controllers/fdController');
-const {
-    verifyToken,
-    authorizeRoles
-} = require('../middleware/auth');
+const { verifySession } = require('../middleware/auth');
+
+function requireAgent(req, res, next) {
+    if (
+        req.user?.user_role !== 'STAFF' ||
+        req.user?.staff_role !== 'AGENT'
+    ) {
+        return res.status(403).json({
+            success: false,
+            message: 'Only banking agents can perform this operation.'
+        });
+    }
+
+    next();
+}
+
 
 router.post(
     '/open',
-    verifyToken,
-    authorizeRoles('AGENT'),
+    verifySession,
+    requireAgent,
     fdController.openFD
 );
 
 router.post(
     '/:id/close-early',
-    verifyToken,
-    authorizeRoles('AGENT'),
+    verifySession,
+    requireAgent,
     fdController.closeEarly
 );
 
