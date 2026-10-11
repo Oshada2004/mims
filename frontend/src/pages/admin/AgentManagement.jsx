@@ -21,7 +21,6 @@ const COLUMNS = [
   },
 ];
 
-// TODO: load from the backend (staffService) — empty until then.
 const agents = [];
 
 export default function AgentManagement() {

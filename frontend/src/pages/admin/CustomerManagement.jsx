@@ -23,7 +23,6 @@ const COLUMNS = [
   },
 ];
 
-// TODO: load from the backend — empty until then.
 const customers = [];
 
 export default function CustomerManagement() {
