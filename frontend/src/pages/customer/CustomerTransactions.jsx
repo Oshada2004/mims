@@ -28,8 +28,6 @@ const COLUMNS = [
     { key: 'amount', header: 'Amount', align: 'right', render: (row) => formatCurrency(row.amount) },
 ];
 
-// TODO: load the customer's accounts (customerService.getCustomerAccounts) and their history
-// (reportService.getTransactionHistory) — both empty until then.
 const accounts = [];
 const transactions = [];
 
