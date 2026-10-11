@@ -12,7 +12,7 @@ export async function login(username, password) {
 
 /**
  * Customer self-registration.
- * Body: { first_name, last_name, date_of_birth, nic, phone, address, postal_code, email, username, password }.
+ * Body: { first_name, last_name, dob, nic, phone_number, address, postal_code, email, username, password }.
  * TODO: backend endpoint not implemented yet
  */
 export async function signup(data) {

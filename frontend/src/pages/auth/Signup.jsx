@@ -14,9 +14,9 @@ import './Auth.css';
 const INITIAL_VALUES = {
   first_name: '',
   last_name: '',
-  date_of_birth: '',
+  dob: '',
   nic: '',
-  phone: '',
+  phone_number: '',
   address: '',
   postal_code: '',
   email: '',
@@ -110,11 +110,11 @@ export default function Signup() {
           <p className="auth-form__section-title">Personal details</p>
           {field('first_name', 'First name', { autoComplete: 'given-name' })}
           {field('last_name', 'Last name', { autoComplete: 'family-name' })}
-          {field('date_of_birth', 'Date of birth', { type: 'date', autoComplete: 'bday' })}
+          {field('dob', 'Date of birth', { type: 'date', autoComplete: 'bday' })}
           {field('nic', 'NIC number')}
 
           <p className="auth-form__section-title">Contact</p>
-          {field('phone', 'Phone', { type: 'tel', autoComplete: 'tel' })}
+          {field('phone_number', 'Phone', { type: 'tel', autoComplete: 'tel' })}
           {field('email', 'Email', { type: 'email', autoComplete: 'email' })}
           {field('address', 'Address', { autoComplete: 'street-address' }, 'auth-form__full')}
           {field('postal_code', 'Postal code', { autoComplete: 'postal-code' })}
