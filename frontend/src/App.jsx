@@ -1,30 +1,25 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
-import Button from './components/ui/Button';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Construction } from 'lucide-react';
+import DashboardLayout from './components/layout/DashboardLayout';
 import Card from './components/ui/Card';
+import EmptyState from './components/ui/EmptyState';
+import PageHeader from './components/ui/PageHeader';
 import { ROLE_HOME, ROLES } from './constants/roles';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ProtectedRoute from './routes/ProtectedRoute';
 
-// TEMPORARY (phase 4): placeholder routes until AppRoutes.jsx and the real pages land in phase 6.
-function PlaceholderHome() {
-  const { user, logout } = useAuth();
+// TEMPORARY (phases 4–5): placeholder routes until AppRoutes.jsx and the real pages land in phase 6.
+function PlaceholderPage() {
+  const { pathname } = useLocation();
   return (
-    <main style={{ maxWidth: 560, margin: '0 auto', padding: 'var(--space-8) var(--space-4)' }}>
-      <Card
-        title={`Signed in as ${user.first_name ?? user.username ?? user.person_id}`}
-        description={`Role: ${user.role}`}
-        actions={
-          <Button variant="secondary" size="sm" icon={LogOut} onClick={logout}>
-            Log out
-          </Button>
-        }
-      >
-        <p className="text-muted">The {user.role.toLowerCase()} dashboard is coming soon.</p>
+    <>
+      <PageHeader title="Coming soon" description={`The page at ${pathname} is built in phase 6.`} />
+      <Card>
+        <EmptyState icon={Construction} title="Under construction" message="Use the sidebar to check navigation." />
       </Card>
-    </main>
+    </>
   );
 }
 
@@ -40,7 +35,10 @@ function TemporaryRoutes() {
       <Route path="/signup" element={publicOnly(<Signup />)} />
       {Object.values(ROLES).map((role) => (
         <Route key={role} path={`/${role.toLowerCase()}`} element={<ProtectedRoute role={role} />}>
-          <Route path="*" element={<PlaceholderHome />} />
+          <Route element={<DashboardLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="*" element={<PlaceholderPage />} />
+          </Route>
         </Route>
       ))}
       <Route path="/unauthorized" element={<p style={{ padding: 'var(--space-8)' }}>Unauthorized.</p>} />
