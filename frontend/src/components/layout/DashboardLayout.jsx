@@ -4,6 +4,7 @@ import Sidebar from '../navigation/Sidebar';
 import Topbar from '../navigation/Topbar';
 import { NAVIGATION } from '../../constants/navigation';
 import { useAuth } from '../../context/AuthContext';
+import { useBank } from '../../context/BankContext';
 import './DashboardLayout.css';
 
 const SIDEBAR_ID = 'app-sidebar';
@@ -11,12 +12,13 @@ const SIDEBAR_ID = 'app-sidebar';
 /* Shell for every signed-in page */
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
+  const bank = useBank();
   const { pathname } = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const items = NAVIGATION[user.role] ?? [];
-  const title = items.find((item) => item.path === pathname)?.label ?? 'Arunodaya Bank';
+  const title = items.find((item) => item.path === pathname)?.label ?? (bank?.bank_name ?? 'bank');
 
   // Escape closes the mobile drawer.
   useEffect(() => {
