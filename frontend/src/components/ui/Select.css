@@ -1,0 +1,19 @@
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select {
+  appearance: none;
+  padding-right: var(--space-8);
+  cursor: pointer;
+}
+
+.select-wrapper__icon {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
