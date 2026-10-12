@@ -1,47 +1,62 @@
 const express = require('express');
 const router = express.Router();
 const accountController = require('../controllers/accountController');
+const {
+  verifySession,
+  authorizeRoles,
+  requireAccountAccess
+} = require('../middleware/auth');
+
+const ACCOUNT_OPERATORS = ['AGENT', 'OFFICER', 'MANAGER', 'ADMIN'];
 
 /**
  * @route   POST /api/accounts
- * @desc    Open a new savings account
- * @access  Agent / Admin (can be protected with auth middleware)
+ * @desc    Open a new savings account at the agent's own branch
+ * @access  Agent
  */
-router.post('/', accountController.openSavingsAccount);
-
-/**
- * @route   GET /api/accounts/customer/:personId
- * @desc    Get all savings accounts associated with a customer
- * @access  Agent / Officer / Customer
- */
-router.get('/customer/:personId', accountController.getAccountsByCustomer);
+router.post('/', verifySession, authorizeRoles('AGENT'), accountController.openSavingsAccount);
 
 /**
  * @route   GET /api/accounts/:accountNo
  * @desc    Get savings account details by account number
- * @access  Agent / Officer / Customer
+ * @access  Staff / Admin (any account); Customer (only accounts they hold, else 404)
  */
-router.get('/:accountNo', accountController.getAccountByNo);
+router.get('/:accountNo', verifySession, requireAccountAccess(), accountController.getAccountByNo);
 
 /**
  * @route   POST /api/accounts/:accountNo/joint-holder
  * @desc    Add a joint account holder
- * @access  Agent / Officer
+ * @access  Agent
  */
-router.post('/:accountNo/joint-holder', accountController.addJointHolder);
+router.post(
+  '/:accountNo/joint-holder',
+  verifySession,
+  authorizeRoles('AGENT'),
+  accountController.addJointHolder
+);
 
 /**
  * @route   POST /api/accounts/:accountNo/reactivate
  * @desc    Reactivate a dormant savings account
- * @access  Agent / Officer / Admin
+ * @access  Agent / Officer / Manager / Admin
  */
-router.post('/:accountNo/reactivate', accountController.reactivateAccount);
+router.post(
+  '/:accountNo/reactivate',
+  verifySession,
+  authorizeRoles(...ACCOUNT_OPERATORS),
+  accountController.reactivateAccount
+);
 
 /**
  * @route   POST /api/accounts/:accountNo/close
  * @desc    Close a savings account (balance must be zero)
- * @access  Agent / Officer / Admin
+ * @access  Agent / Officer / Manager / Admin
  */
-router.post('/:accountNo/close', accountController.closeAccount);
+router.post(
+  '/:accountNo/close',
+  verifySession,
+  authorizeRoles(...ACCOUNT_OPERATORS),
+  accountController.closeAccount
+);
 
 module.exports = router;

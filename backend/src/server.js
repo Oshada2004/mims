@@ -7,6 +7,10 @@ const customerRoutes = require('./routes/customerRoutes');
 const accountRoutes = require('./routes/accountRoutes');
 const staffRoutes = require('./routes/staffRoutes');
 const bankRoutes = require('./routes/bankRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
+const fdRoutes = require('./routes/fdRoutes');
+const jobRoutes = require('./routes/jobRoutes');
 
 const app = express();
 
@@ -28,6 +32,10 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/bank', bankRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/fd', fdRoutes);
+app.use('/api/jobs', jobRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
