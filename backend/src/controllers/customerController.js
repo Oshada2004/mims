@@ -1,5 +1,6 @@
 
 const pool = require('../config/db');
+const { listPage } = require('../middleware/pagination');
 
 const CUSTOMER_PROCEDURES = {
   adult: 'sp_create_adult_customer',
@@ -225,5 +226,39 @@ exports.getCustomerAccounts = async (req, res) => {
     return res.status(500).json({
       error: 'Unable to retrieve customer accounts.'
     });
+  }
+};
+
+// GET /api/customers?search=&limit=&offset=
+// Adult and minor customers. Search matches name, NIC, birth certificate number or phone.
+exports.listCustomers = async (req, res, next) => {
+  const { search, like } = req.pagination;
+
+  try {
+    const result = await listPage(
+      pool,
+      {
+        select: `p.person_id, p.first_name, p.last_name, p.nic, m.birth_cert_no,
+                 p.phone_number, p.dob,
+                 CASE WHEN a.person_id IS NOT NULL THEN 'ADULT' ELSE 'MINOR' END AS customer_type,
+                 m.guardian_person_id`,
+        from: `PERSON p
+               LEFT JOIN ADULT_CUSTOMER_PROFILE a ON a.person_id = p.person_id
+               LEFT JOIN MINOR_CUSTOMER_PROFILE m ON m.person_id = p.person_id`,
+        where: `(a.person_id IS NOT NULL OR m.person_id IS NOT NULL)
+                AND (? = ''
+                     OR CONCAT(p.first_name, ' ', p.last_name) LIKE ?
+                     OR p.nic LIKE ?
+                     OR m.birth_cert_no LIKE ?
+                     OR p.phone_number LIKE ?)`,
+        params: [search, like, like, like, like],
+        orderBy: 'p.last_name, p.first_name, p.person_id'
+      },
+      req.pagination
+    );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
   }
 };

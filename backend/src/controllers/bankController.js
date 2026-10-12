@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { listPage } = require('../middleware/pagination');
 
 // Public endpoint: only expose these fields (internal limits such as
 // daily_agent_withdrawal_limit stay server-side).
@@ -28,6 +29,77 @@ exports.getMetadata = async (req, res, next) => {
     );
 
     return res.json({ bank: publicMetadata });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// GET /api/bank/branches?search=&limit=&offset=  (search: branch name or district)
+exports.listBranches = async (req, res, next) => {
+  const { search, like } = req.pagination;
+
+  try {
+    const result = await listPage(
+      pool,
+      {
+        select: 'branch_id, branch_name, district',
+        from: 'BRANCH',
+        where: "(? = '' OR branch_name LIKE ? OR district LIKE ?)",
+        params: [search, like, like],
+        orderBy: 'branch_id'
+      },
+      req.pagination
+    );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// GET /api/bank/savings-plans?search=  (search: plan code or name)
+exports.listSavingsPlans = async (req, res, next) => {
+  const { search, like } = req.pagination;
+
+  try {
+    const result = await listPage(
+      pool,
+      {
+        select: `plan_code, plan_name, annual_interest_rate, min_balance,
+                 min_age, max_age, allows_joint`,
+        from: 'SAV_ACC_PLAN',
+        where: "(? = '' OR plan_code LIKE ? OR plan_name LIKE ?)",
+        params: [search, like, like],
+        orderBy: 'min_age, plan_code'
+      },
+      req.pagination
+    );
+
+    result.data = result.data.map((plan) => ({ ...plan, allows_joint: Boolean(plan.allows_joint) }));
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// GET /api/bank/fd-plans?search=  (search: term code)
+exports.listFdPlans = async (req, res, next) => {
+  const { search, like } = req.pagination;
+
+  try {
+    const result = await listPage(
+      pool,
+      {
+        select: 'term_code, duration_months, annual_interest_rate',
+        from: 'FD_ACC_PLAN',
+        where: "(? = '' OR term_code LIKE ?)",
+        params: [search, like],
+        orderBy: 'duration_months'
+      },
+      req.pagination
+    );
+
+    return res.json(result);
   } catch (error) {
     return next(error);
   }

@@ -7,6 +7,16 @@ const {
   verifySession,
   requireRole
 } = require('../middleware/auth');
+const { paginate } = require('../middleware/pagination');
+
+// Search customers (adult and minor). Staff and admin only.
+router.get(
+  '/',
+  verifySession,
+  requireRole('STAFF', 'ADMIN'),
+  paginate,
+  customerController.listCustomers
+);
 
 router.post(
   '/adult',

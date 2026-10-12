@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { listPage } = require('../middleware/pagination');
 
 // Allowed values
 const STAFF_ROLES = ['MANAGER', 'CASHIER', 'OFFICER', 'AGENT', 'ADMIN'];
@@ -182,4 +183,36 @@ exports.createStaff = async (req, res, next) => {
     } catch (err) {
         return handleDatabaseError(err, res, next);
     }
+};
+
+// GET /api/staff?search=&limit=&offset=
+// Staff members with their branch and login name. Never returns salary, password hashes or sessions.
+exports.listStaff = async (req, res, next) => {
+  const { search, like } = req.pagination;
+
+  try {
+    const result = await listPage(
+      pool,
+      {
+        select: `sp.person_id, p.first_name, p.last_name, sp.staff_role, sp.department,
+                 sp.branch_id, b.branch_name, u.username, u.email, u.user_role`,
+        from: `STAFF_PROFILE sp
+               JOIN PERSON p ON p.person_id = sp.person_id
+               JOIN BRANCH b ON b.branch_id = sp.branch_id
+               LEFT JOIN AUTH_USER u ON u.person_id = sp.person_id`,
+        where: `(? = ''
+                 OR CONCAT(p.first_name, ' ', p.last_name) LIKE ?
+                 OR u.username LIKE ?
+                 OR sp.staff_role LIKE ?
+                 OR b.branch_name LIKE ?)`,
+        params: [search, like, like, like, like],
+        orderBy: 'p.last_name, p.first_name, sp.person_id'
+      },
+      req.pagination
+    );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
 };
