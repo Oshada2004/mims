@@ -28,8 +28,15 @@ export function clearToken() {
   }
 }
 
+// Some controllers send { error: 'BusinessRuleViolation', message: '<reason>' }: there `error`
+// is just a code, so the human-readable `message` wins.
+const ERROR_CODE_PATTERN = /^[A-Z][A-Za-z]+$/;
+
 export function getErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
   const data = error?.response?.data;
+  if (typeof data?.error === 'string' && ERROR_CODE_PATTERN.test(data.error) && data?.message) {
+    return data.message;
+  }
   return data?.error ?? data?.message ?? fallback;
 }
 
