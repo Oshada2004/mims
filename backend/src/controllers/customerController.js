@@ -99,6 +99,25 @@ async function callCustomerProcedure(procedureName, body) {
 }
 
 function handleControllerError(res, error, operation) {
+  // Business rules raised by the procedures/triggers (e.g. age or NIC checks).
+  if (error.sqlState === '45000') {
+    return res.status(422).json({
+      error: error.sqlMessage || error.message
+    });
+  }
+
+  if (error.code === 'ER_DUP_ENTRY') {
+    return res.status(409).json({
+      error: 'A person with this NIC, birth certificate number or tax ID is already registered.'
+    });
+  }
+
+  if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+    return res.status(400).json({
+      error: 'The guardian or agent referenced does not exist.'
+    });
+  }
+
   console.error(`${operation} failed:`, error.message);
 
   if (
@@ -115,12 +134,21 @@ function handleControllerError(res, error, operation) {
   });
 }
 
+// The registering agent always comes from the session, never from the request body.
+function withSessionAgent(req) {
+  const body = Object.fromEntries(
+    Object.entries(req.body || {}).filter(([key]) => normalizeKey(key) !== 'agentpersonid')
+  );
+  body.agent_person_id = req.user.personId;
+  return body;
+}
+
 // POST /api/customers/adult
 exports.createAdultCustomer = async (req, res) => {
   try {
     const result = await callCustomerProcedure(
       CUSTOMER_PROCEDURES.adult,
-      req.body
+      withSessionAgent(req)
     );
 
     return res.status(201).json({
@@ -141,7 +169,7 @@ exports.createMinorWithNewGuardian = async (req, res) => {
   try {
     const result = await callCustomerProcedure(
       CUSTOMER_PROCEDURES.minorNewGuardian,
-      req.body
+      withSessionAgent(req)
     );
 
     return res.status(201).json({
@@ -162,7 +190,7 @@ exports.createMinorWithExistingGuardian = async (req, res) => {
   try {
     const result = await callCustomerProcedure(
       CUSTOMER_PROCEDURES.minorExistingGuardian,
-      req.body
+      withSessionAgent(req)
     );
 
     return res.status(201).json({

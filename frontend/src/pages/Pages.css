@@ -256,3 +256,8 @@
 .section-gap {
   margin-top: var(--space-4);
 }
+
+/* Links styled as buttons should not get the underline from the global a:hover rule. */
+a.btn:hover {
+  text-decoration: none;
+}

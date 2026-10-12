@@ -1,90 +1,72 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Alert from '../../components/ui/Alert';
-import Badge from '../../components/ui/Badge';
-import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import EmptyState from '../../components/ui/EmptyState';
 import FormField from '../../components/ui/FormField';
-import Input from '../../components/ui/Input';
 import PageHeader from '../../components/ui/PageHeader';
-import SearchBar from '../../components/ui/SearchBar';
 import Select from '../../components/ui/Select';
-import Table from '../../components/ui/Table';
-import { formatCurrency, formatDate } from '../../utils/format';
+import Spinner from '../../components/ui/Spinner';
+import { useApi } from '../../api/useApi';
+import { getCustomerAccounts } from '../../api/services/customerService';
+import { useAuth } from '../../context/AuthContext';
+import { formatCurrency } from '../../utils/format';
+import TransactionHistory from '../shared/TransactionHistory';
 import '../Pages.css';
 
-const TRANSACTION_TYPES = [
-    { value: 'deposit', label: 'Deposit' },
-    { value: 'withdraw', label: 'Withdrawal' },
-];
-
-const COLUMNS = [
-    { key: 'created_at', header: 'Date', render: (row) => formatDate(row.created_at, { withTime: true }) },
-    {
-        key: 'type',
-        header: 'Type',
-        render: (row) => <Badge variant={row.type?.toUpperCase() === 'DEPOSIT' ? 'success' : 'accent'}>{row.type}</Badge>,
-    },
-    { key: 'ref_text', header: 'Reference' },
-    { key: 'amount', header: 'Amount', align: 'right', render: (row) => formatCurrency(row.amount) },
-];
-
-const accounts = [];
-const transactions = [];
-
 export default function CustomerTransactions() {
-    const [search, setSearch] = useState('');
-    const query = search.trim().toLowerCase();
-    const rows = transactions.filter((tx) => String(tx.ref_text ?? '').toLowerCase().includes(query));
-    const accountOptions = accounts.map((account) => ({ value: account.account_no, label: account.account_no }));
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const accounts = useApi((signal) => getCustomerAccounts(user.person_id, { signal }), [user.person_id]);
 
-    return (
-        <div className="page">
-            <PageHeader title="Transactions" description="Deposits, withdrawals and history for your accounts." />
-            <Alert>This page will let you move money and review the history of your savings accounts.</Alert>
+  const rows = accounts.data ?? [];
+  // Default to the first account; the backend still checks the account belongs to this customer.
+  const selected = searchParams.get('account') ?? rows[0]?.accountNo ?? '';
+  const current = rows.find((row) => row.accountNo === selected);
 
-            <div className="two-column">
-                <Card title="New transaction">
-                    <form onSubmit={(event) => event.preventDefault()}>
-                        <div className="form-grid">
-                            <FormField label="Type" required className="form-grid__full">
-                                <Select name="type" options={TRANSACTION_TYPES} defaultValue="deposit" />
-                            </FormField>
-                            <FormField label="Account" required className="form-grid__full">
-                                <Select
-                                    name="accountNo"
-                                    options={accountOptions}
-                                    placeholder={accounts.length ? 'Select an account' : 'No accounts yet'}
-                                    defaultValue=""
-                                />
-                            </FormField>
-                            <FormField label="Amount (LKR)" required className="form-grid__full">
-                                <Input name="amount" type="number" min="0" step="0.01" />
-                            </FormField>
-                            <FormField label="Reference" className="form-grid__full">
-                                <Input name="refText" />
-                            </FormField>
-                        </div>
-                        <div className="form-actions">
-                            <Button type="submit" disabled>
-                                Coming soon
-                            </Button>
-                        </div>
-                    </form>
-                </Card>
+  return (
+    <div className="page">
+      <PageHeader title="Transactions" description="The history of your savings accounts, newest first." />
 
-                <Card title="Transaction history">
-                    <div className="toolbar">
-                        <SearchBar value={search} onChange={setSearch} placeholder="Search references" label="Search transactions" />
-                    </div>
-                    <Table
-                        columns={COLUMNS}
-                        rows={rows}
-                        rowKey={(row) => row.transaction_id}
-                        emptyMessage={query ? 'No transactions match your search.' : 'Your transactions will appear here.'}
-                        caption="Transaction history"
-                    />
-                </Card>
+      <Alert>
+        Deposits and withdrawals are made through your agent at the branch. This page shows your history only.
+      </Alert>
+
+      {accounts.error && (
+        <Alert variant="error" title="Could not load your accounts">
+          {accounts.error}
+        </Alert>
+      )}
+
+      <Card
+        title="Account history"
+        description={current ? `Current balance: ${formatCurrency(current.balance)}` : undefined}
+      >
+        {accounts.loading && !accounts.data && <Spinner label="Loading your accounts" />}
+        {accounts.data && rows.length === 0 && (
+          <EmptyState title="No accounts yet" message="Visit your agent to open a savings account." compact />
+        )}
+        {rows.length > 0 && (
+          <div className="stack">
+            <div className="form-grid">
+              <FormField label="Account">
+                <Select
+                  value={selected}
+                  onChange={(event) => setSearchParams({ account: event.target.value })}
+                  options={[
+                    // Keep an unknown account from the URL visible so its error is explained.
+                    ...(selected && !current ? [{ value: selected, label: selected }] : []),
+                    ...rows.map((row) => ({
+                      value: row.accountNo,
+                      label: `${row.accountNo} · ${row.planCode} · ${row.status}`,
+                    })),
+                  ]}
+                />
+              </FormField>
             </div>
-        </div>
-    );
+            <TransactionHistory accountNo={selected} />
+          </div>
+        )}
+      </Card>
+    </div>
+  );
 }
