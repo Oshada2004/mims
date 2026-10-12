@@ -63,3 +63,10 @@ export function formatPercent(value) {
   if (Number.isNaN(rate)) return '—';
   return `${percentFormatter.format(rate)}%`;
 }
+
+/** Turn a backend enum such as 'CUSTOMER_SERVICE' into 'Customer service'. Returns '' when empty. */
+export function formatLabel(value) {
+  if (value === null || value === undefined || value === '') return '';
+  const text = String(value).replace(/_/g, ' ').toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}

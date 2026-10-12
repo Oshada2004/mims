@@ -1,6 +1,7 @@
 import { LogOut } from 'lucide-react';
 import Button from '../ui/Button';
 import { ROLE_LABELS } from '../../constants/navigation';
+import { formatLabel } from '../../utils/format';
 
 function displayName(user) {
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
@@ -18,7 +19,10 @@ function initials(name) {
 /** Current user's avatar, name and role, plus the logout button. */
 export default function UserMenu({ user, onLogout, loggingOut = false }) {
   const name = displayName(user);
-  const roleLabel = ROLE_LABELS[user.role] ?? user.role;
+  // Staff show their job role too, e.g. "Staff · Agent".
+  const roleLabel = [ROLE_LABELS[user.role] ?? user.role, user.role === 'STAFF' && formatLabel(user.staff_role)]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div className="user-menu">
