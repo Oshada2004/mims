@@ -18,7 +18,7 @@ export default function DashboardLayout() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const items = NAVIGATION[user.role] ?? [];
-  const title = items.find((item) => item.path === pathname)?.label ?? (bank?.bank_name ?? 'bank');
+  const title = items.find((item) => item.path === pathname)?.label ?? (bank?.name ?? 'bank');
 
   // Escape closes the mobile drawer.
   useEffect(() => {

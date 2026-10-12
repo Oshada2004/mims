@@ -10,7 +10,7 @@ import { getErrorMessage } from '../../api/client';
 import { ROLE_HOME, ROLES } from '../../constants/roles';
 import { useAuth } from '../../context/AuthContext';
 import { useBank } from '../../context/BankContext';
-import './Auth.css';
+import './auth.css';
 
 const INITIAL_VALUES = {
   first_name: '',
@@ -98,7 +98,7 @@ export default function Signup() {
     <AuthLayout
       wide
       title="Open your customer account"
-      description={`Register online to access your ${bank?.bank_name ?? 'bank'} accounts.`}
+      description={`Register online to access your ${bank?.name ?? 'bank'} accounts.`}
       footer={
         <>
           Already registered? <Link to="/login">Sign in</Link>

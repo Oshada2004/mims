@@ -10,7 +10,7 @@ import { getErrorMessage } from '../../api/client';
 import { ROLE_HOME } from '../../constants/roles';
 import { useAuth } from '../../context/AuthContext';
 import { useBank } from '../../context/BankContext';
-import './Auth.css';
+import './auth.css';
 
 export default function Login() {
   const { login } = useAuth();
@@ -45,7 +45,7 @@ export default function Login() {
   return (
     <AuthLayout
       title="Sign in"
-      description={`Use your ${bank?.bank_name ?? 'bank'} credentials to continue.`}
+      description={`Use your ${bank?.name ?? 'bank'} credentials to continue.`}
       footer={
         <>
           New customer? <Link to="/signup">Create an account</Link>

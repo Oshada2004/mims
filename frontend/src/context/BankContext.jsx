@@ -1,25 +1,12 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import client from '../api/client';
+import { createContext, useContext } from 'react';
+import { useApi } from '../api/useApi';
+import { getMetadata } from '../api/services/bankService';
 
 const BankContext = createContext(null);
 
+/** Loads the public bank metadata once ({ name, motto, contactEmail, openTime, closeTime, … }). */
 export function BankProvider({ children }) {
-  const [bank, setBank] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    client.get('/bank/metadata')
-      .then((response) => {
-        if (!cancelled) setBank(response.data.bank);
-      })
-      .catch((error) => {
-        console.error('Could not load bank metadata: ', error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data: bank } = useApi((signal) => getMetadata({ signal }), []);
 
   return <BankContext.Provider value={bank}>{children}</BankContext.Provider>;
 }

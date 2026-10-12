@@ -19,6 +19,17 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-LK', {
   minute: '2-digit',
 });
 
+const percentFormatter = new Intl.NumberFormat('en-LK', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function toDate(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 /**
  * Format a number (or numeric string from MySQL DECIMAL) as LKR with 2 decimals.
  * Returns '—' for empty or non-numeric values.
@@ -35,8 +46,20 @@ export function formatCurrency(value) {
  * Returns '—' for empty or invalid values.
  */
 export function formatDate(value, { withTime = false } = {}) {
-  if (value === null || value === undefined || value === '') return '—';
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
+  const date = toDate(value);
+  if (!date) return '—';
   return (withTime ? dateTimeFormatter : dateFormatter).format(date);
+}
+
+/** Format a date with its time. Returns '—' for empty or invalid values. */
+export function formatDateTime(value) {
+  return formatDate(value, { withTime: true });
+}
+
+/** Format an annual rate such as 11 or "11.00" as "11.00%". Returns '—' when empty. */
+export function formatPercent(value) {
+  if (value === null || value === undefined || value === '') return '—';
+  const rate = Number(value);
+  if (Number.isNaN(rate)) return '—';
+  return `${percentFormatter.format(rate)}%`;
 }
