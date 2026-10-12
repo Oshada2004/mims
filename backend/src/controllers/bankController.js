@@ -3,24 +3,15 @@ const pool = require('../config/db');
 exports.getMetadata = async (req, res, next) => {
   try {
     const [rows] = await pool.query(
-      `SELECT
-         bank_id,
-         bank_name,
-         daily_agent_withdrawal_limit,
-         contact_email,
-         motto,
-         bank_start_time,
-         bank_close_time
-       FROM BANK_META_DATA
-       ORDER BY bank_id
-       LIMIT 1`
+      'SELECT fn_get_bank_metadata() AS bank'
     );
+    const bank = rows[0]?.bank;
 
-    if (rows.length === 0) {
+    if (!bank) {
       return res.status(404).json({ error: 'Bank metadata is not configured.' });
     }
 
-    return res.json({ bank: rows[0] });
+    return res.json({ bank: typeof bank === 'string' ? JSON.parse(bank) : bank });
   } catch (error) {
     return next(error);
   }

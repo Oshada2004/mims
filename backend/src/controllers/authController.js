@@ -55,33 +55,16 @@ exports.getProfile = async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT
-         au.person_id,
-         au.email,
-         au.username,
-         au.user_role,
-         p.first_name,
-         p.last_name,
-         sp.staff_role,
-         sp.branch_id,
-         b.branch_name
-       FROM USER_SESSION us
-       JOIN AUTH_USER au ON au.person_id = us.person_id
-       JOIN PERSON p ON p.person_id = au.person_id
-       LEFT JOIN STAFF_PROFILE sp ON sp.person_id = au.person_id
-       LEFT JOIN BRANCH b ON b.branch_id = sp.branch_id
-       WHERE us.session_id = ?
-         AND us.is_active = TRUE
-         AND us.expires_at > NOW()
-       LIMIT 1`,
+      'SELECT fn_get_profile_context(?) AS profile',
       [sessionId]
     );
+    const profile = rows[0]?.profile;
 
-    if (rows.length === 0) {
+    if (!profile) {
       return res.status(401).json({ error: 'Invalid or expired session' });
     }
 
-    res.json({ user: rows[0] });
+    res.json({ user: typeof profile === 'string' ? JSON.parse(profile) : profile });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
