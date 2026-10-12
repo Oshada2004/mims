@@ -1,5 +1,11 @@
 const pool = require('../config/db');
 
+function getSessionId(req) {
+  return (
+    req.headers.authorization?.replace(/^Bearer\s+/i, '') || req.headers['x-session-id']
+  );
+}
+
 // Register Credentials
 exports.register = async (req, res) => {
   const { person_id, email, username, password, user_role } = req.body;
@@ -44,7 +50,7 @@ exports.login = async (req, res) => {
 
 // Get Profile Context
 exports.getProfile = async (req, res) => {
-  const sessionId = req.headers['authorization'];
+  const sessionId = getSessionId(req);
   if (!sessionId) return res.status(401).json({ error: 'Session ID required' });
 
   try {
@@ -83,7 +89,7 @@ exports.getProfile = async (req, res) => {
 
 // Logout
 exports.logout = async (req, res) => {
-  const sessionId = req.headers['authorization'];
+  const sessionId = getSessionId(req);
   const clientIp = req.ip || '127.0.0.1';
 
   try {

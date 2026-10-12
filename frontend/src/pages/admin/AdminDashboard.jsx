@@ -10,7 +10,7 @@ export default function AdminDashboard() {
   return (
     <div className="page">
       <PageHeader title="Admin dashboard" description="Bank-wide overview of branches, agents and customers." />
-      <Alert>This page will summarise activity across every Arunodaya Bank branch.</Alert>
+      <Alert>This page will summarise activity across every Bank branch.</Alert>
 
       <div className="stat-grid">
         <StatCard label="Branches" icon={Building2} />

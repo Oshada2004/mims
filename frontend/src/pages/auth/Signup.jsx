@@ -9,6 +9,7 @@ import Input from '../../components/ui/Input';
 import { getErrorMessage } from '../../api/client';
 import { ROLE_HOME, ROLES } from '../../constants/roles';
 import { useAuth } from '../../context/AuthContext';
+import { useBank } from '../../context/BankContext';
 import './Auth.css';
 
 const INITIAL_VALUES = {
@@ -57,6 +58,7 @@ export default function Signup() {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const bank = useBank();
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -96,7 +98,7 @@ export default function Signup() {
     <AuthLayout
       wide
       title="Open your customer account"
-      description="Register online to access your Arunodaya Bank accounts."
+      description={`Register online to access your ${bank?.bank_name ?? 'bank'} accounts.`}
       footer={
         <>
           Already registered? <Link to="/login">Sign in</Link>
