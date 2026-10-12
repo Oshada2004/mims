@@ -33,6 +33,10 @@ export function clearToken() {
 const ERROR_CODE_PATTERN = /^[A-Z][A-Za-z]+$/;
 
 export function getErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
+  // No response at all: the API is down or the network is offline.
+  if (error?.isAxiosError && !error.response) {
+    return 'Cannot reach the server. Check your connection and try again.';
+  }
   const data = error?.response?.data;
   if (typeof data?.error === 'string' && ERROR_CODE_PATTERN.test(data.error) && data?.message) {
     return data.message;

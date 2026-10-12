@@ -8,8 +8,7 @@ import SearchBar from '../../components/ui/SearchBar';
 import Spinner from '../../components/ui/Spinner';
 import Table from '../../components/ui/Table';
 import { useApi } from '../../api/useApi';
-import { listBranches, listFdPlans, listSavingsPlans } from '../../api/services/bankService';
-import { useBank } from '../../context/BankContext';
+import { getMetadata, listBranches, listFdPlans, listSavingsPlans } from '../../api/services/bankService';
 import { formatCurrency, formatPercent } from '../../utils/format';
 import { useDebouncedValue } from '../../utils/useDebouncedValue';
 import '../Pages.css';
@@ -51,7 +50,6 @@ function formatTime(value) {
 
 /** Read-only view of the bank's configuration. */
 export default function BankManagement() {
-  const bank = useBank();
   const [search, setSearch] = useState('');
   const [offset, setOffset] = useState(0);
   const debouncedSearch = useDebouncedValue(search.trim());
@@ -62,13 +60,21 @@ export default function BankManagement() {
   );
   const savingsPlans = useApi((signal) => listSavingsPlans(undefined, { signal }), []);
   const fdPlans = useApi((signal) => listFdPlans(undefined, { signal }), []);
+  // Loaded here (not from BankContext) so this page can show its own loading and error states.
+  const metadata = useApi((signal) => getMetadata({ signal }), []);
+  const bank = metadata.data;
 
   return (
     <div className="page">
       <PageHeader title="Bank management" description="Bank details, branches and the savings and FD plans on offer." />
 
       <Card title="Bank">
-        {bank ? (
+        {metadata.error && <Alert variant="error">{metadata.error}</Alert>}
+        {metadata.loading && !bank && <Spinner label="Loading bank details" />}
+        {!metadata.loading && !metadata.error && !bank && (
+          <p className="text-muted">Bank details have not been configured.</p>
+        )}
+        {bank && (
           <dl className="summary-grid">
             <div>
               <dt>Name</dt>
@@ -93,8 +99,6 @@ export default function BankManagement() {
               </dd>
             </div>
           </dl>
-        ) : (
-          <Spinner label="Loading bank details" />
         )}
       </Card>
 
