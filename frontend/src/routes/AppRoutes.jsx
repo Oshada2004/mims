@@ -8,14 +8,21 @@ import ProtectedRoute from './ProtectedRoute';
 import Login from '../pages/auth/Login';
 import Signup from '../pages/auth/Signup';
 import AdminDashboard from '../pages/admin/AdminDashboard';
-import NotFound from '../pages/shared/NotFound';
-import Unauthorized from '../pages/shared/Unauthorized';
 import BankManagement from '../pages/admin/BankManagement';
 import AgentManagement from '../pages/admin/AgentManagement';
 import CustomerManagement from '../pages/admin/CustomerManagement';
+import StaffDashboard from '../pages/staff/StaffDashboard';
+import RegisterCustomer from '../pages/staff/RegisterCustomer';
+import OpenAccount from '../pages/staff/OpenAccount';
+import StaffOpenFd from '../pages/staff/StaffOpenFd';
+import StaffTransactions from '../pages/staff/StaffTransactions';
+import CustomerDashboard from '../pages/customer/CustomerDashboard';
+import CustomerTransactions from '../pages/customer/CustomerTransactions';
+import CustomerOpenFd from '../pages/customer/CustomerOpenFd';
 import Profile from '../pages/shared/Profile';
 import Settings from '../pages/shared/Settings';
-
+import NotFound from '../pages/shared/NotFound';
+import Unauthorized from '../pages/shared/Unauthorized';
 
 export default function AppRoutes() {
   const { user, loading } = useAuth();
@@ -38,6 +45,30 @@ export default function AppRoutes() {
           <Route path="banks" element={<BankManagement />} />
           <Route path="agents" element={<AgentManagement />} />
           <Route path="customers" element={<CustomerManagement />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Route>
+
+      <Route path="/staff" element={<ProtectedRoute role={ROLES.STAFF} />}>
+        <Route element={<DashboardLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<StaffDashboard />} />
+          <Route path="register-customer" element={<RegisterCustomer />} />
+          <Route path="open-account" element={<OpenAccount />} />
+          <Route path="open-fd" element={<StaffOpenFd />} />
+          <Route path="transactions" element={<StaffTransactions />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Route>
+
+      <Route path="/customer" element={<ProtectedRoute role={ROLES.CUSTOMER} />}>
+        <Route element={<DashboardLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<CustomerDashboard />} />
+          <Route path="transactions" element={<CustomerTransactions />} />
+          <Route path="open-fd" element={<CustomerOpenFd />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
         </Route>

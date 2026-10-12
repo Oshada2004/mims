@@ -20,6 +20,7 @@ const COLUMNS = [
     render: (row) => <Badge variant={row.status === 'ACTIVE' ? 'success' : 'neutral'}>{row.status}</Badge>,
   },
 ];
+
 const agents = [];
 
 export default function AgentManagement() {
