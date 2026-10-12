@@ -261,3 +261,13 @@
 a.btn:hover {
   text-decoration: none;
 }
+
+.two-column--even {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 960px) {
+  .two-column--even {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

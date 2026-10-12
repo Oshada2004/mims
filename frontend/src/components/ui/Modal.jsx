@@ -7,6 +7,13 @@ import './Modal.css';
 export default function Modal({ open, onClose, title, footer, size = 'md', children }) {
   const titleId = useId();
   const dialogRef = useRef(null);
+  // Latest onClose without re-running the open/close effect (callers often pass inline functions,
+  // and re-running it would move focus away from the input being typed in).
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return undefined;
@@ -17,7 +24,7 @@ export default function Modal({ open, onClose, title, footer, size = 'md', child
     dialogRef.current?.focus();
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') onClose?.();
+      if (event.key === 'Escape') onCloseRef.current?.();
     };
     document.addEventListener('keydown', handleKeyDown);
 
@@ -26,7 +33,7 @@ export default function Modal({ open, onClose, title, footer, size = 'md', child
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
