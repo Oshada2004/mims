@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
+const { BANK_TIMEZONE } = require('./timezone');
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST || 'database',//'localhost'
@@ -10,7 +11,9 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 20,
     queueLimit: 0,
-    multipleStatements: true
+    multipleStatements: true,
+    // DATETIME/DATE values are bank-time wall clock; read and write them in the same zone as MySQL.
+    timezone: BANK_TIMEZONE
 });
 
 module.exports = pool;
