@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'mims/db/**'
+      - 'db/**'
+  workflow_dispatch: # <-- This enables the manual "Run workflow" button!
 
 jobs:
   migrate:
@@ -34,4 +35,4 @@ jobs:
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          flyway -configFiles=mims/db/flyway.conf migrate
+          flyway -configFiles=db/flyway.conf migrate
