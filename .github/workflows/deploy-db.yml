@@ -1,0 +1,23 @@
+name: Run Flyway Migrations
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'mims/db/**'
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Flyway Migrations
+        uses: flyway/flyway-action@v9
+        with:
+          url: jdbc:mysql://${{ secrets.DB_HOST }}:3306/mims_db
+          user: user
+          password: ${{ secrets.DB_PASSWORD }}
+          locations: filesystem:mims/db/migrations,filesystem:mims/db/seeds
+          command: migrate
