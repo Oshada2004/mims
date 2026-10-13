@@ -10,7 +10,7 @@ import { getErrorMessage } from '../../api/client';
 import { ROLE_HOME } from '../../constants/roles';
 import { useAuth } from '../../context/AuthContext';
 import { useBank } from '../../context/BankContext';
-import './Auth.css';
+import './auth.css';
 
 export default function Login() {
   const { login } = useAuth();

@@ -10,7 +10,7 @@ import { getErrorMessage } from '../../api/client';
 import { ROLE_HOME, ROLES } from '../../constants/roles';
 import { useAuth } from '../../context/AuthContext';
 import { useBank } from '../../context/BankContext';
-import './Auth.css';
+import './auth.css';
 
 const INITIAL_VALUES = {
   first_name: '',
