@@ -45,6 +45,8 @@ exports.verifySession = async (req, res, next) => {
     }
 
     req.user = rows[0];
+
+    req.user.personId = req.user.person_id;
     next();
   } catch (error) {
     console.error('Session verification failed:', error.message);
@@ -75,5 +77,75 @@ exports.requireRole = (...allowedRoles) => {
 
 exports.verifyToken = exports.verifySession;
 
-exports.authorizeRoles = (...roles) =>
-  exports.requireRole(...roles);
+exports.authorizeRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Authentication required.'
+      });
+    }
+
+    const { user_role: userRole, staff_role: staffRole } = req.user;
+
+    if (!roles.includes(userRole) && !roles.includes(staffRole)) {
+      return res.status(403).json({
+        error: 'You do not have permission to perform this operation.'
+      });
+    }
+
+    next();
+  };
+};
+
+
+exports.requireAccountAccess = (...staffRoles) => {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Authentication required.'
+      });
+    }
+
+    const { user_role: userRole, staff_role: staffRole, person_id: personId } = req.user;
+
+    if (userRole === 'CUSTOMER') {
+      try {
+        const [rows] = await pool.query(
+          `SELECT 1
+             FROM ACCOUNT_HOLDER
+            WHERE account_no = ?
+              AND customer_person_id = ?
+            LIMIT 1`,
+          [req.params.accountNo, personId]
+        );
+
+        if (!rows.length) {
+          return res.status(404).json({
+            success: false,
+            message: 'Account not found.'
+          });
+        }
+
+        return next();
+      } catch (error) {
+        console.error('Account access check failed:', error.message);
+
+        return res.status(500).json({
+          error: 'Unable to verify account access.'
+        });
+      }
+    }
+
+    const allowed = staffRoles.length
+      ? staffRoles.includes(userRole) || staffRoles.includes(staffRole)
+      : userRole === 'STAFF' || userRole === 'ADMIN';
+
+    if (!allowed) {
+      return res.status(403).json({
+        error: 'You do not have permission to perform this operation.'
+      });
+    }
+
+    next();
+  };
+};
