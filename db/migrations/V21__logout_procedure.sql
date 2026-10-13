@@ -1,6 +1,3 @@
--- Ends a login session. Called by authController.logout as CALL sp_logout_user(session_id, ip).
--- An unknown, empty or already-closed session id is a no-op (no error, no audit row).
-
 DELIMITER $$
 
 DROP PROCEDURE IF EXISTS sp_logout_user$$
