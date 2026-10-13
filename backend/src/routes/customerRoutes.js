@@ -7,6 +7,15 @@ const {
   verifySession,
   requireRole
 } = require('../middleware/auth');
+const { paginate } = require('../middleware/pagination');
+
+router.get(
+  '/',
+  verifySession,
+  requireRole('STAFF', 'ADMIN'),
+  paginate,
+  customerController.listCustomers
+);
 
 router.post(
   '/adult',
@@ -35,5 +44,7 @@ router.get(
   requireRole('CUSTOMER', 'STAFF', 'ADMIN'),
   customerController.getCustomerAccounts
 );
+
+
 
 module.exports = router;
