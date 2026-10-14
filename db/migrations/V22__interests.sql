@@ -101,12 +101,6 @@ BEGIN
     COMMIT;
 END$$
 
-DELIMITER ;
-
-CREATE INDEX idx_savings_status_next_accrual 
-ON SAVINGS_ACCOUNT (status, next_accrual_date);
-
-DELIMITER $$
 
 DROP PROCEDURE IF EXISTS sp_run_savings_interest_accrual$$
 
