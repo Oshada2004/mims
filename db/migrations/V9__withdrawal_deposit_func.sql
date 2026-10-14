@@ -45,11 +45,15 @@ BEGIN
         SET p_new_balance=p_new_balance+p_amount;
 
         INSERT INTO TRANSACTION_LOG(
-            sav_acc_no,agent_person_id,fd_id,txn_type,amount,balance_after,ref_text,txn_timestamp
-        ) VALUES(
-            p_account_no,p_agent_id,NULL,'DEPOSIT',p_amount,p_new_balance,p_ref_text,NOW()
-        );
+            txn_type,txn_timestamp
+        ) VALUES('DEPOSIT_WITHDRAWAL',NOW());
         SET p_txn_id=LAST_INSERT_ID();
+
+        INSERT INTO DEPOSIT_WITHDRAW_LOG(
+            txn_id,txn_type,agent_person_id,sav_acc_no,amount,balance_after,ref_text
+        ) VALUES(
+            p_txn_id,'DEPOSIT',p_agent_id,p_account_no,p_amount,p_new_balance,p_ref_text
+        );
 
         UPDATE SAVINGS_ACCOUNT
         SET balance=p_new_balance,last_txn_date=CURDATE()
@@ -121,12 +125,16 @@ BEGIN
 
         SET p_new_balance = v_curr_bal - p_amount;
 
-        INSERT INTO TRANSACTION_LOG(
-            sav_acc_no,agent_person_id,fd_id,txn_type,amount,balance_after,ref_text,txn_timestamp
-        ) VALUES(
-            p_account_no,p_agent_id,NULL,'WITHDRAWAL',p_amount,p_new_balance,p_ref_text,NOW()
-        );
+        INSERT INTO TRANSACTION_LOG(txn_type,txn_timestamp
+        ) VALUES('DEPOSIT_WITHDRAWAL',NOW());
+
         SET p_txn_id=LAST_INSERT_ID();
+
+        INSERT INTO DEPOSIT_WITHDRAW_LOG(
+            txn_id,txn_type,agent_person_id,sav_acc_no,amount,balance_after,ref_text
+        ) VALUES(
+            p_txn_id,'WITHDRAWAL',p_agent_id,p_account_no,p_amount,p_new_balance,p_ref_text
+        );
 
         UPDATE SAVINGS_ACCOUNT
         SET balance=p_new_balance,last_txn_date=CURDATE()

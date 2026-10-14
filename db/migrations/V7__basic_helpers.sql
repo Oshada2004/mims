@@ -49,12 +49,13 @@ RETURNS DECIMAL(14,2)
 READS SQL DATA
 BEGIN
     DECLARE v_total DECIMAL(14,2);
-    SELECT COALESCE(SUM(amount),0.00) INTO v_total
-    FROM TRANSACTION_LOG
-    WHERE sav_acc_no=p_account_no
-        AND txn_type='WITHDRAWAL'
-        AND DATE(txn_timestamp)=CURDATE()
-        AND agent_person_id IS NOT NULL;
+    SELECT COALESCE(SUM(dw.amount), 0.00) INTO v_total
+    FROM DEPOSIT_WITHDRAW_LOG dw
+    JOIN TRANSACTION_LOG t ON dw.txn_id=t.txn_id
+    WHERE dw.sav_acc_no=p_account_no
+        AND dw.txn_type='WITHDRAWAL'
+        AND DATE(t.txn_timestamp)=CURDATE()
+        AND dw.agent_person_id IS NOT NULL;
     RETURN v_total;
 END$$
 
@@ -81,31 +82,29 @@ DELIMITER $$
 -- minimum balance and overdraft prevention
 DROP TRIGGER IF EXISTS trg_before_insert_transaction_log$$
 CREATE TRIGGER trg_before_insert_transaction_log
-BEFORE INSERT ON TRANSACTION_LOG
+BEFORE INSERT ON DEPOSIT_WITHDRAW_LOG
 FOR EACH ROW
 BEGIN
     DECLARE v_curr_bal DECIMAL(14,2) DEFAULT NULL;
     DECLARE v_min_bal DECIMAL(14,2) DEFAULT NULL;
     DECLARE v_status ENUM ('ACTIVE', 'DORMANT', 'CLOSED') DEFAULT NULL;
     
-    IF NEW.amount<=0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT='Transaction amount must be greater than zero.';
-    END IF;
-    
     IF NEW.txn_type='WITHDRAWAL' THEN
         IF NEW.sav_acc_no IS NULL THEN
             SIGNAL SQLSTATE '45000' 
             SET MESSAGE_TEXT='Withdrawal records must reference a valid sav_acc_no.';
         END IF;
+        
         SELECT balance, contracted_min_balance, status 
         INTO v_curr_bal, v_min_bal, v_status
         FROM SAVINGS_ACCOUNT 
         WHERE account_no=NEW.sav_acc_no;
+        
         IF v_status IS NULL THEN
             SIGNAL SQLSTATE '45000' 
             SET MESSAGE_TEXT='Referenced savings account does not exist.';
         END IF;
+        
         IF v_status='DORMANT' THEN
             SIGNAL SQLSTATE '45000' 
             SET MESSAGE_TEXT='Account is DORMANT. Agent reactivation required.';
@@ -113,6 +112,7 @@ BEGIN
             SIGNAL SQLSTATE '45000' 
             SET MESSAGE_TEXT='Cannot withdraw from a CLOSED account.';
         END IF;
+        
         IF(v_curr_bal-NEW.amount)<v_min_bal THEN
             SIGNAL SQLSTATE '45000' 
             SET MESSAGE_TEXT='Transaction breaches the contracted minimum balance.';
