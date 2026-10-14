@@ -7,7 +7,7 @@ CREATE PROCEDURE sp_open_fixed_deposit(
     IN p_term_code VARCHAR(5),
     IN p_principal DECIMAL(14,2),
     IN p_agent_id INT,
-    OUT p_fd_id VARCHAR(15)
+    OUT p_fd_id CHAR(20)
 )
 BEGIN
     DECLARE v_duration_months INT DEFAULT NULL;
@@ -16,6 +16,7 @@ BEGIN
     DECLARE v_min_balance DECIMAL(14,2) DEFAULT NULL;
     DECLARE v_status VARCHAR(10) DEFAULT NULL;
     DECLARE v_account_agent_id INT DEFAULT NULL;
+    DECLARE v_txn_id BIGINT;
 
     SET p_fd_id = NULL; -- ie no fd has been created yet
 
@@ -140,24 +141,35 @@ BEGIN
         );
 
         INSERT INTO TRANSACTION_LOG (
-            sav_acc_no,
-            agent_person_id,
-            fd_id,
             txn_type,
-            amount,
-            balance_after,
-            ref_text,
             txn_timestamp
         )
         VALUES (
-            p_savings_acc_no,
+            'DEPOSIT_WITHDRAWAL',
+            NOW()
+        );
+
+        SET v_txn_id = LAST_INSERT_ID();
+
+        INSERT INTO DEPOSIT_WITHDRAW_LOG (
+            txn_id,
+            txn_type,
+            agent_person_id,
+            sav_acc_no,
+            fd_id,
+            amount,
+            balance_after,
+            ref_text
+        )
+        VALUES (
+            v_txn_id,
+            'FD_FUNDING',
             p_agent_id,
+            p_savings_acc_no,
             p_fd_id,
-            'WITHDRAWAL',
             p_principal,
             v_balance - p_principal,
-            'Principal allocation to fixed deposit',
-            NOW()
+            'Principal allocation to fixed deposit'
         );
 
         UPDATE SAVINGS_ACCOUNT
