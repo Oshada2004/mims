@@ -14,10 +14,6 @@ import { ageInYears } from '../../utils/validation';
 
 const PAGE_SIZE = 5;
 
-/**
- * Search customers (GET /customers) and pick one. Shows the selection with a "Change" button.
- * `isSelectable(customer)` can disable rows (e.g. only adults can be guardians).
- */
 export default function CustomerPicker({ value, onChange, isSelectable = () => true, disabledReason = '' }) {
   const [search, setSearch] = useState('');
   const [offset, setOffset] = useState(0);
