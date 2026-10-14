@@ -2,105 +2,134 @@ import { useState } from 'react';
 import Alert from '../../components/ui/Alert';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
+import Modal from '../../components/ui/Modal';
 import PageHeader from '../../components/ui/PageHeader';
 import Pagination from '../../components/ui/Pagination';
 import SearchBar from '../../components/ui/SearchBar';
-import Spinner from '../../components/ui/Spinner';
 import Table from '../../components/ui/Table';
 import { useApi } from '../../api/useApi';
-import { getMetadata, listBranches, listFdPlans, listSavingsPlans } from '../../api/services/bankService';
-import { formatCurrency, formatPercent } from '../../utils/format';
+import { getCustomerAccounts, listCustomers } from '../../api/services/customerService';
+import { getCustomerActivity } from '../../api/services/reportService';
+import { STATUS_BADGE } from '../../constants/status';
+import { formatCurrency, formatDate, formatLabel } from '../../utils/format';
 import { useDebouncedValue } from '../../utils/useDebouncedValue';
+import { ageInYears } from '../../utils/validation';
 import '../Pages.css';
 
-const BRANCH_PAGE_SIZE = 10;
+const PAGE_SIZE = 10;
 
-const BRANCH_COLUMNS = [
-  { key: 'branchId', header: 'ID' },
-  { key: 'name', header: 'Branch' },
-  { key: 'district', header: 'District' },
-];
-
-const SAVINGS_COLUMNS = [
-  { key: 'code', header: 'Code' },
-  { key: 'name', header: 'Plan' },
-  { key: 'interestRate', header: 'Interest', align: 'right', render: (row) => `${formatPercent(row.interestRate)} p.a.` },
-  { key: 'minBalance', header: 'Min. balance', align: 'right', render: (row) => formatCurrency(row.minBalance) },
+const COLUMNS = [
+  { key: 'personId', header: 'ID' },
+  { key: 'fullName', header: 'Name' },
+  { key: 'idNumber', header: 'NIC / birth cert.', render: (row) => row.idNumber ?? '—' },
+  { key: 'phone', header: 'Phone' },
+  { key: 'dob', header: 'Date of birth', render: (row) => formatDate(row.dob) },
   {
-    key: 'ages',
-    header: 'Ages',
-    render: (row) => (row.maxAge === null ? `${row.minAge}+` : `${row.minAge}–${row.maxAge}`),
-  },
-  {
-    key: 'allowsJoint',
-    header: 'Joint',
-    render: (row) => <Badge variant={row.allowsJoint ? 'success' : 'neutral'}>{row.allowsJoint ? 'Yes' : 'No'}</Badge>,
+    key: 'type',
+    header: 'Type',
+    render: (row) => <Badge variant={row.type === 'MINOR' ? 'accent' : 'neutral'}>{formatLabel(row.type)}</Badge>,
   },
 ];
 
-const FD_COLUMNS = [
-  { key: 'termCode', header: 'Code' },
-  { key: 'months', header: 'Duration', render: (row) => `${row.months} months` },
-  { key: 'interestRate', header: 'Interest', align: 'right', render: (row) => `${formatPercent(row.interestRate)} p.a.` },
+const ACCOUNT_COLUMNS = [
+  { key: 'accountNo', header: 'Account' },
+  { key: 'planCode', header: 'Plan' },
+  { key: 'holderRole', header: 'Holder', render: (row) => formatLabel(row.holderRole) },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (row) => <Badge variant={STATUS_BADGE[row.status] ?? 'neutral'}>{row.status}</Badge>,
+  },
+  { key: 'balance', header: 'Balance', align: 'right', render: (row) => formatCurrency(row.balance) },
 ];
 
-function formatTime(value) {
-  return value ? String(value).slice(0, 5) : '—';
+/** Accounts and activity totals for one customer. */
+function CustomerAccountsModal({ customer, onClose }) {
+  const personId = customer?.personId ?? null;
+  const accounts = useApi((signal) => (personId ? getCustomerAccounts(personId, { signal }) : null), [personId]);
+  // 404 here just means the customer has no activity yet.
+  const activity = useApi((signal) => (personId ? getCustomerActivity(personId, {}, { signal }) : null), [personId]);
+
+  if (!customer) return null;
+  const age = ageInYears(customer.dob);
+
+  return (
+    <Modal open onClose={onClose} title={customer.fullName} size="lg">
+      <div className="stack">
+        <dl className="summary-grid">
+          <div>
+            <dt>Person ID</dt>
+            <dd>{customer.personId}</dd>
+          </div>
+          <div>
+            <dt>{customer.type === 'MINOR' ? 'Birth certificate' : 'NIC'}</dt>
+            <dd>{customer.idNumber ?? '—'}</dd>
+          </div>
+          <div>
+            <dt>Age</dt>
+            <dd>{age ?? '—'}</dd>
+          </div>
+          <div>
+            <dt>Phone</dt>
+            <dd>{customer.phone}</dd>
+          </div>
+          {customer.guardianPersonId && (
+            <div>
+              <dt>Guardian ID</dt>
+              <dd>{customer.guardianPersonId}</dd>
+            </div>
+          )}
+          {activity.data && (
+            <>
+              <div>
+                <dt>Agent</dt>
+                <dd>{activity.data.agentName ?? '—'}</dd>
+              </div>
+              <div>
+                <dt>Total deposits</dt>
+                <dd>{formatCurrency(activity.data.totalDeposits)}</dd>
+              </div>
+              <div>
+                <dt>Total withdrawals</dt>
+                <dd>{formatCurrency(activity.data.totalWithdrawals)}</dd>
+              </div>
+              <div>
+                <dt>Active FD</dt>
+                <dd>{activity.data.hasActiveFd ? 'Yes' : 'No'}</dd>
+              </div>
+            </>
+          )}
+        </dl>
+        {accounts.error && <Alert variant="error">{accounts.error}</Alert>}
+        <Table
+          columns={ACCOUNT_COLUMNS}
+          rows={accounts.data ?? []}
+          rowKey={(row) => row.accountNo}
+          loading={accounts.loading && !accounts.data}
+          emptyMessage="This customer has no savings accounts."
+          caption={`Accounts of ${customer.fullName}`}
+        />
+      </div>
+    </Modal>
+  );
 }
 
-export default function BankManagement() {
+export default function CustomerManagement() {
   const [search, setSearch] = useState('');
   const [offset, setOffset] = useState(0);
+  const [selected, setSelected] = useState(null);
   const debouncedSearch = useDebouncedValue(search.trim());
 
-  const branches = useApi(
-    (signal) => listBranches({ search: debouncedSearch, limit: BRANCH_PAGE_SIZE, offset }, { signal }),
+  const customers = useApi(
+    (signal) => listCustomers({ search: debouncedSearch, limit: PAGE_SIZE, offset }, { signal }),
     [debouncedSearch, offset],
   );
-  const savingsPlans = useApi((signal) => listSavingsPlans(undefined, { signal }), []);
-  const fdPlans = useApi((signal) => listFdPlans(undefined, { signal }), []);
-  const metadata = useApi((signal) => getMetadata({ signal }), []);
-  const bank = metadata.data;
 
   return (
     <div className="page">
-      <PageHeader title="Bank management" description="Bank details, branches and the savings and FD plans on offer." />
+      <PageHeader title="Customers" description="Every adult and minor customer. Select a customer to see their accounts." />
 
-      <Card title="Bank">
-        {metadata.error && <Alert variant="error">{metadata.error}</Alert>}
-        {metadata.loading && !bank && <Spinner label="Loading bank details" />}
-        {!metadata.loading && !metadata.error && !bank && (
-          <p className="text-muted">Bank details have not been configured.</p>
-        )}
-        {bank && (
-          <dl className="summary-grid">
-            <div>
-              <dt>Name</dt>
-              <dd>{bank.name}</dd>
-            </div>
-            <div>
-              <dt>Bank code</dt>
-              <dd>{bank.bankId}</dd>
-            </div>
-            <div>
-              <dt>Motto</dt>
-              <dd>{bank.motto || '—'}</dd>
-            </div>
-            <div>
-              <dt>Contact</dt>
-              <dd>{bank.contactEmail || '—'}</dd>
-            </div>
-            <div>
-              <dt>Banking hours</dt>
-              <dd>
-                {formatTime(bank.openTime)} – {formatTime(bank.closeTime)}
-              </dd>
-            </div>
-          </dl>
-        )}
-      </Card>
-
-      <Card title="Branches" description={branches.data ? `${branches.data.total} branches` : undefined}>
+      <Card description={customers.data ? `${customers.data.total} customers` : undefined}>
         <div className="stack">
           <SearchBar
             value={search}
@@ -108,52 +137,31 @@ export default function BankManagement() {
               setSearch(next);
               setOffset(0);
             }}
-            placeholder="Search by branch or district"
-            label="Search branches"
+            placeholder="Search by name, NIC, birth certificate or phone"
+            label="Search customers"
           />
-          {branches.error && <Alert variant="error">{branches.error}</Alert>}
+          {customers.error && <Alert variant="error">{customers.error}</Alert>}
           <Table
-            columns={BRANCH_COLUMNS}
-            rows={branches.data?.items ?? []}
-            rowKey={(row) => row.branchId}
-            loading={branches.loading && !branches.data}
-            emptyMessage={debouncedSearch ? 'No branches match your search.' : 'No branches configured.'}
-            caption="Branches"
+            columns={COLUMNS}
+            rows={customers.data?.items ?? []}
+            rowKey={(row) => row.personId}
+            loading={customers.loading && !customers.data}
+            emptyMessage={debouncedSearch ? 'No customers match your search.' : 'No customers registered yet.'}
+            caption="Customers"
+            onRowClick={setSelected}
+            selectedKey={selected?.personId}
           />
           <Pagination
-            total={branches.data?.total ?? 0}
-            limit={BRANCH_PAGE_SIZE}
+            total={customers.data?.total ?? 0}
+            limit={PAGE_SIZE}
             offset={offset}
             onChange={setOffset}
-            disabled={branches.loading}
+            disabled={customers.loading}
           />
         </div>
       </Card>
 
-      <div className="two-column two-column--even">
-        <Card title="Savings plans">
-          {savingsPlans.error && <Alert variant="error">{savingsPlans.error}</Alert>}
-          <Table
-            columns={SAVINGS_COLUMNS}
-            rows={savingsPlans.data?.items ?? []}
-            rowKey={(row) => row.code}
-            loading={savingsPlans.loading && !savingsPlans.data}
-            emptyMessage="No savings plans configured."
-            caption="Savings plans"
-          />
-        </Card>
-        <Card title="FD plans">
-          {fdPlans.error && <Alert variant="error">{fdPlans.error}</Alert>}
-          <Table
-            columns={FD_COLUMNS}
-            rows={fdPlans.data?.items ?? []}
-            rowKey={(row) => row.termCode}
-            loading={fdPlans.loading && !fdPlans.data}
-            emptyMessage="No FD plans configured."
-            caption="FD plans"
-          />
-        </Card>
-      </div>
+      <CustomerAccountsModal customer={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }
