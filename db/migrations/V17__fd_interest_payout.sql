@@ -7,7 +7,7 @@ CREATE PROCEDURE sp_run_fd_interest_payout(
 )
 BEGIN
     DECLARE v_done BOOLEAN DEFAULT FALSE;
-    DECLARE v_fd_id VARCHAR(15);
+    DECLARE v_fd_id CHAR(20);
     DECLARE v_acc_no VARCHAR(15);
     DECLARE v_locked_acc_no VARCHAR(15);
 
@@ -20,6 +20,7 @@ BEGIN
     DECLARE v_next_accrual_date DATE;
     DECLARE v_fd_status VARCHAR(25);
     DECLARE v_account_status VARCHAR(10);
+    DECLARE v_txn_id BIGINT;
 
     DECLARE cur_fd CURSOR FOR
         SELECT fd_id, acc_no
@@ -136,26 +137,34 @@ BEGIN
             SET v_balance = v_balance + v_interest;
 
             INSERT INTO TRANSACTION_LOG (
-                sav_acc_no,
-                agent_person_id,
-                fd_id,
                 txn_type,
-                amount,
-                balance_after,
-                ref_text,
                 txn_timestamp
             )
             VALUES (
-                v_acc_no,
-                NULL,
-                v_fd_id,
-                'FD_INTEREST',
-                v_interest,
-                v_balance,
-                CONCAT('FD interest due ', v_next_accrual_date),
+                'INTEREST',
                 NOW()
             );
 
+            SET v_txn_id = LAST_INSERT_ID();
+
+            INSERT INTO INTEREST_LOG (
+                txn_id,
+                account_type,
+                sav_acc_no,
+                fd_id,
+                amount,
+                balance_after,
+                ref_text
+            )
+            VALUES (
+                v_txn_id,
+                'FIXED',
+                v_acc_no,
+                v_fd_id,
+                v_interest,
+                v_balance,
+                CONCAT('FD interest due ', v_next_accrual_date)
+            );
             SET v_next_accrual_date =
                 DATE_ADD(v_next_accrual_date, INTERVAL 30 DAY);
 
@@ -174,27 +183,37 @@ BEGIN
 
             SET v_balance = v_balance + v_principal;
 
-            INSERT INTO TRANSACTION_LOG (
-                sav_acc_no,
-                agent_person_id,
-                fd_id,
+           INSERT INTO TRANSACTION_LOG (
                 txn_type,
-                amount,
-                balance_after,
-                ref_text,
                 txn_timestamp
             )
             VALUES (
-                v_acc_no,
-                NULL,
-                v_fd_id,
-                'DEPOSIT',
-                v_principal,
-                v_balance,
-                'FD maturity principal return',
+                'DEPOSIT_WITHDRAWAL',
                 NOW()
             );
 
+            SET v_txn_id = LAST_INSERT_ID();
+
+            INSERT INTO DEPOSIT_WITHDRAW_LOG (
+                txn_id,
+                txn_type,
+                agent_person_id,
+                sav_acc_no,
+                fd_id,
+                amount,
+                balance_after,
+                ref_text
+            )
+            VALUES (
+                v_txn_id,
+                'FD_PRINCIPAL_RETURN',
+                NULL,
+                v_acc_no,
+                v_fd_id,
+                v_principal,
+                v_balance,
+                'FD maturity principal return'
+            );
             UPDATE FIXED_DEPOSIT
             SET status = 'SETTLED',
                 active_acc_no = NULL,

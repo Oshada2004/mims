@@ -3,7 +3,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_early_close_fixed_deposit$$
 
 CREATE PROCEDURE sp_early_close_fixed_deposit(
-    IN p_fd_id VARCHAR(15),
+    IN p_fd_id CHAR(20),
     IN p_agent_id INT
 )
 BEGIN
@@ -15,6 +15,7 @@ BEGIN
     DECLARE v_balance DECIMAL(14,2) DEFAULT NULL;
     DECLARE v_account_agent_id INT DEFAULT NULL;
     DECLARE v_maturity_date DATE DEFAULT NULL;
+    DECLARE v_txn_id BIGINT;
 
     IF p_fd_id IS NULL OR TRIM(p_fd_id) = '' THEN
         SIGNAL SQLSTATE '45000'
@@ -112,24 +113,35 @@ BEGIN
         WHERE account_no = v_acc_no;
 
         INSERT INTO TRANSACTION_LOG (
-            sav_acc_no,
-            agent_person_id,
-            fd_id,
             txn_type,
-            amount,
-            balance_after,
-            ref_text,
             txn_timestamp
         )
         VALUES (
-            v_acc_no,
+            'DEPOSIT_WITHDRAWAL',
+            NOW()
+        );
+
+        SET v_txn_id = LAST_INSERT_ID();
+
+        INSERT INTO DEPOSIT_WITHDRAW_LOG (
+            txn_id,
+            txn_type,
+            agent_person_id,
+            sav_acc_no,
+            fd_id,
+            amount,
+            balance_after,
+            ref_text
+        )
+        VALUES (
+            v_txn_id,
+            'FD_PRINCIPAL_RETURN',
             p_agent_id,
+            v_acc_no,
             p_fd_id,
-            'DEPOSIT',
             v_principal,
             v_balance + v_principal,
-            'FD early closure principal return',
-            NOW()
+            'FD early closure principal return'
         );
 
         UPDATE FIXED_DEPOSIT
