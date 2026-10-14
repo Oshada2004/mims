@@ -13,6 +13,8 @@ export const TXN_BADGE = {
     WITHDRAWAL: 'accent',
     SAVINGS_INTEREST: 'neutral',
     FD_INTEREST: 'neutral',
+    FD_FUNDING: 'accent',
+    FD_PRINCIPAL_RETURN: 'success',
 };
 
-export const DEBIT_TYPES = ['WITHDRAWAL'];
+export const DEBIT_TYPES = ['WITHDRAWAL', 'FD_FUNDING'];
