@@ -98,7 +98,7 @@ export default function Signup() {
     <AuthLayout
       wide
       title="Open your customer account"
-      description={`Register online to access your ${bank?.bank_name ?? 'bank'} accounts.`}
+      description={`Register online to access your ${bank?.name ?? 'bank'} accounts.`}
       footer={
         <>
           Already registered? <Link to="/login">Sign in</Link>

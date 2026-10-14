@@ -23,7 +23,7 @@ export default function Sidebar({ id, items, open, onClose }) {
             <Landmark size={20} aria-hidden="true" />
           </span>
           <span className="sidebar__brand-text">
-            <span className="sidebar__brand-name">{bank?.bank_name ?? 'bank'}</span>
+            <span className="sidebar__brand-name">{bank?.name ?? 'bank'}</span>
             <span className="sidebar__brand-sub">MIMS</span>
           </span>
           <button

@@ -45,7 +45,7 @@ export default function Login() {
   return (
     <AuthLayout
       title="Sign in"
-      description={`Use your ${bank?.bank_name ?? 'bank'} credentials to continue.`}
+      description={`Use your ${bank?.name ?? 'bank'} credentials to continue.`}
       footer={
         <>
           New customer? <Link to="/signup">Create an account</Link>
