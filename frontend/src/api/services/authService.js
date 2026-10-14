@@ -1,12 +1,13 @@
 import client from '../client';
 import { endpoints } from '../endpoints';
 
+
 export async function login(username, password) {
   const response = await client.post(endpoints.auth.login, { username, password });
   return response.data;
 }
 
-/*Customer self-registration.*/
+
 export async function signup(data) {
   const response = await client.post(endpoints.auth.signup, data);
   return response.data;
