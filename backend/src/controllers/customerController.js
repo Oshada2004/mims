@@ -1,5 +1,6 @@
 
 const pool = require('../config/db');
+const { listPage } = require('../middleware/pagination');
 
 const CUSTOMER_PROCEDURES = {
   adult: 'sp_create_adult_customer',
@@ -7,8 +8,7 @@ const CUSTOMER_PROCEDURES = {
   minorExistingGuardian: 'sp_create_minor_with_existing_guardian'
 };
 
-// Normalize SQL parameter names and JSON keys.
-// Example: p_first_name -> firstname
+
 function normalizeKey(value) {
   return String(value)
     .replace(/^(p|in|input)_/i, '')
@@ -16,7 +16,6 @@ function normalizeKey(value) {
     .toLowerCase();
 }
 
-// Flatten nested request bodies, such as { guardian: { first_name: "..." } }.
 function flattenObject(value, prefix = '', result = {}) {
   if (
     value === null ||
@@ -44,7 +43,6 @@ function flattenObject(value, prefix = '', result = {}) {
   return result;
 }
 
-// ignoring underscores, capitalization, and common prefixes.
 async function callCustomerProcedure(procedureName, body) {
   const [parameters] = await pool.query(
     `SELECT PARAMETER_NAME, PARAMETER_MODE, ORDINAL_POSITION
@@ -98,6 +96,24 @@ async function callCustomerProcedure(procedureName, body) {
 }
 
 function handleControllerError(res, error, operation) {
+  if (error.sqlState === '45000') {
+    return res.status(422).json({
+      error: error.sqlMessage || error.message
+    });
+  }
+
+  if (error.code === 'ER_DUP_ENTRY') {
+    return res.status(409).json({
+      error: 'A person with this NIC, birth certificate number or tax ID is already registered.'
+    });
+  }
+
+  if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+    return res.status(400).json({
+      error: 'The guardian or agent referenced does not exist.'
+    });
+  }
+
   console.error(`${operation} failed:`, error.message);
 
   if (
@@ -114,12 +130,19 @@ function handleControllerError(res, error, operation) {
   });
 }
 
-// POST /api/customers/adult
+function withSessionAgent(req) {
+  const body = Object.fromEntries(
+    Object.entries(req.body || {}).filter(([key]) => normalizeKey(key) !== 'agentpersonid')
+  );
+  body.agent_person_id = req.user.personId;
+  return body;
+}
+
 exports.createAdultCustomer = async (req, res) => {
   try {
     const result = await callCustomerProcedure(
       CUSTOMER_PROCEDURES.adult,
-      req.body
+      withSessionAgent(req)
     );
 
     return res.status(201).json({
@@ -135,12 +158,11 @@ exports.createAdultCustomer = async (req, res) => {
   }
 };
 
-// POST /api/customers/minor/new-guardian
 exports.createMinorWithNewGuardian = async (req, res) => {
   try {
     const result = await callCustomerProcedure(
       CUSTOMER_PROCEDURES.minorNewGuardian,
-      req.body
+      withSessionAgent(req)
     );
 
     return res.status(201).json({
@@ -156,12 +178,11 @@ exports.createMinorWithNewGuardian = async (req, res) => {
   }
 };
 
-// POST /api/customers/minor/existing-guardian
 exports.createMinorWithExistingGuardian = async (req, res) => {
   try {
     const result = await callCustomerProcedure(
       CUSTOMER_PROCEDURES.minorExistingGuardian,
-      req.body
+      withSessionAgent(req)
     );
 
     return res.status(201).json({
@@ -177,7 +198,6 @@ exports.createMinorWithExistingGuardian = async (req, res) => {
   }
 };
 
-// GET /api/customers/:personId/accounts
 exports.getCustomerAccounts = async (req, res) => {
   const requestedPersonId = Number(req.params.personId);
   const authenticatedPersonId = Number(req.user.person_id);
@@ -225,5 +245,38 @@ exports.getCustomerAccounts = async (req, res) => {
     return res.status(500).json({
       error: 'Unable to retrieve customer accounts.'
     });
+  }
+};
+
+
+exports.listCustomers = async (req, res, next) => {
+  const { search, like } = req.pagination;
+
+  try {
+    const result = await listPage(
+      pool,
+      {
+        select: `p.person_id, p.first_name, p.last_name, p.nic, m.birth_cert_no,
+                 p.phone_number, p.dob,
+                 CASE WHEN a.person_id IS NOT NULL THEN 'ADULT' ELSE 'MINOR' END AS customer_type,
+                 m.guardian_person_id`,
+        from: `PERSON p
+               LEFT JOIN ADULT_CUSTOMER_PROFILE a ON a.person_id = p.person_id
+               LEFT JOIN MINOR_CUSTOMER_PROFILE m ON m.person_id = p.person_id`,
+        where: `(a.person_id IS NOT NULL OR m.person_id IS NOT NULL)
+                AND (? = ''
+                     OR CONCAT(p.first_name, ' ', p.last_name) LIKE ?
+                     OR p.nic LIKE ?
+                     OR m.birth_cert_no LIKE ?
+                     OR p.phone_number LIKE ?)`,
+        params: [search, like, like, like, like],
+        orderBy: 'p.last_name, p.first_name, p.person_id'
+      },
+      req.pagination
+    );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error);
   }
 };

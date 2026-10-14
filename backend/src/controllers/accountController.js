@@ -32,38 +32,23 @@ function handleError(res, error, action) {
   });
 }
 
-async function getPersonById(personId) {
-  try {
-    const [rows] = await db.query('SELECT get_person_by_id(?) AS person', [personId]);
-    const person = rows[0]?.person;
-
-    if (!person) {
-      const error = new Error('Customer does not exist.');
-      error.statusCode = 404;
-      throw error;
-    }
-
-    return typeof person === 'string' ? JSON.parse(person) : person;
-  } catch (error) {
-    // MySQL 1329 / 02000 is raised when SELECT ... INTO has no data
-    if (error.errno === 1329 || error.sqlState === '02000') {
-      const notFoundErr = new Error('Customer does not exist.');
-      notFoundErr.statusCode = 404;
-      throw notFoundErr;
-    }
-    throw error;
-  }
-}
-
 async function openSavingsAccount(req, res) {
-  const { branchId, planCode, initialDeposit } = req.body || {};
-  const agentPersonId = req.user?.personId || req.body?.agentPersonId;
-  const customerId = req.body?.customerId;
+  const { customerId, planCode, initialDeposit } = req.body || {};
+  // The agent and branch always come from the session, never from the request body.
+  const agentPersonId = req.user?.personId;
+  const branchId = req.user?.branch_id;
 
-  if (!branchId || !agentPersonId || !customerId || !planCode || initialDeposit == null) {
+  if (!agentPersonId || !branchId) {
+    return res.status(403).json({
+      success: false,
+      message: 'Only an agent assigned to a branch can open accounts.'
+    });
+  }
+
+  if (!customerId || !planCode || initialDeposit == null) {
     return res.status(400).json({
       success: false,
-      message: 'branchId, agentPersonId, customerId, planCode, and initialDeposit are required.'
+      message: 'customerId, planCode, and initialDeposit are required.'
     });
   }
 
@@ -94,36 +79,6 @@ async function openSavingsAccount(req, res) {
     return handleError(res, error, 'open savings account');
   } finally {
     if (conn) conn.release();
-  }
-}
-
-
-async function getAccountsByCustomer(req, res) {
-  const { personId } = req.params;
-
-  if (!personId || isNaN(personId)) {
-    return res.status(400).json({
-      success: false,
-      message: 'A valid customer person ID is required.'
-    });
-  }
-
-  try {
-    await getPersonById(personId);
-
-    const [results] = await db.query('CALL customer_active_accounts(?)', [personId]);
-    const accounts = results[0] || [];
-
-    if (accounts.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'This customer does not have any active accounts.'
-      });
-    }
-
-    return res.status(200).json({ success: true, data: accounts });
-  } catch (error) {
-    return handleError(res, error, 'fetch customer accounts');
   }
 }
 
@@ -191,7 +146,7 @@ async function addJointHolder(req, res) {
 
 async function reactivateAccount(req, res) {
   const { accountNo } = req.params;
-  const operatorId = req.user?.personId || req.body?.operatorId;
+  const operatorId = req.user?.personId;
 
   if (!operatorId) {
     return res.status(400).json({ success: false, message: 'operatorId is required' });
@@ -210,7 +165,7 @@ async function reactivateAccount(req, res) {
 
 async function closeAccount(req, res) {
   const { accountNo } = req.params;
-  const operatorId = req.user?.personId || req.body?.operatorId;
+  const operatorId = req.user?.personId;
 
   if (!operatorId) {
     return res.status(400).json({ success: false, message: 'operatorId is required' });
@@ -229,9 +184,7 @@ async function closeAccount(req, res) {
 
 
 module.exports = {
-  getPersonById,
   openSavingsAccount,
-  getAccountsByCustomer,
   getAccountByNo,
   addJointHolder,
   reactivateAccount,

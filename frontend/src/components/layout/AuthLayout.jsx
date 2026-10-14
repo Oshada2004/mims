@@ -14,7 +14,7 @@ export default function AuthLayout({ title, description, wide = false, footer, c
             <Landmark size={22} aria-hidden="true" />
           </span>
           <span>
-            <span className="auth-layout__brand-name">{bank?.bank_name ?? 'bank'}</span>
+            <span className="auth-layout__brand-name">{bank?.name ?? 'bank'}</span>
             <span className="auth-layout__brand-sub">MIMS</span>
           </span>
         </div>

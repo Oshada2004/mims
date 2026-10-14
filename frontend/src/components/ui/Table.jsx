@@ -14,6 +14,8 @@ export default function Table({
   loading = false,
   rowKey = (row, index) => row.id ?? index,
   caption,
+  onRowClick,
+  selectedKey,
 }) {
   const colSpan = columns.length;
 
@@ -35,15 +37,37 @@ export default function Table({
       </tr>
     );
   } else {
-    body = rows.map((row, index) => (
-      <tr key={rowKey(row, index)}>
+    body = rows.map((row, index) => {
+      const key = rowKey(row, index);
+      const clickable = Boolean(onRowClick);
+      return (
+      <tr
+        key={key}
+        className={[clickable && 'table__row--clickable', key === selectedKey && 'table__row--selected']
+          .filter(Boolean)
+          .join(' ') || undefined}
+        tabIndex={clickable ? 0 : undefined}
+        aria-selected={clickable ? key === selectedKey : undefined}
+        onClick={clickable ? () => onRowClick(row) : undefined}
+        onKeyDown={
+          clickable
+            ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onRowClick(row);
+                }
+              }
+            : undefined
+        }
+      >
         {columns.map((column) => (
           <td key={column.key} className={column.align ? `table__cell--${column.align}` : undefined}>
             {column.render ? column.render(row) : (row[column.key] ?? '—')}
           </td>
         ))}
       </tr>
-    ));
+      );
+    });
   }
 
   return (
