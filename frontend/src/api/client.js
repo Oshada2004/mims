@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { endpoints } from './endpoints';
 
-/* localStorage key for the auth token*/
 export const TOKEN_STORAGE_KEY = 'mims_auth_token';
 
 export function getToken() {
@@ -16,7 +15,7 @@ export function setToken(token) {
   try {
     localStorage.setItem(TOKEN_STORAGE_KEY, token);
   } catch {
-    // Nothing set yet
+    //
   }
 }
 
@@ -24,12 +23,21 @@ export function clearToken() {
   try {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
   } catch {
-    // Nothing set yet
+    //
   }
 }
 
+const ERROR_CODE_PATTERN = /^[A-Z][A-Za-z]+$/;
+
 export function getErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
+  // If there is no reponse
+  if (error?.isAxiosError && !error.response) {
+    return 'Cannot reach the server. Check your connection and try again.';
+  }
   const data = error?.response?.data;
+  if (typeof data?.error === 'string' && ERROR_CODE_PATTERN.test(data.error) && data?.message) {
+    return data.message;
+  }
   return data?.error ?? data?.message ?? fallback;
 }
 
