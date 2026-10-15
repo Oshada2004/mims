@@ -1,8 +1,7 @@
-import { SlidersHorizontal } from 'lucide-react';
 import Card from '../../components/ui/Card';
-import EmptyState from '../../components/ui/EmptyState';
 import PageHeader from '../../components/ui/PageHeader';
 import ChangePasswordForm from './ChangePasswordForm';
+import PreferencesForm from './PreferencesForm';
 import '../Pages.css';
 
 export default function Settings() {
@@ -16,13 +15,8 @@ export default function Settings() {
         <ChangePasswordForm />
       </Card>
 
-      <Card title="Preferences">
-        <EmptyState
-          icon={SlidersHorizontal}
-          title="Coming soon"
-          message="Notification and display preferences will live here."
-          compact
-        />
+      <Card title="Preferences" description="Saved to your login, so they follow you to other browsers.">
+        <PreferencesForm />
       </Card>
     </div>
   );

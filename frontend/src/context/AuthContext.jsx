@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { clearToken, getToken, setToken } from '../api/client';
 import * as authService from '../api/services/authService';
+import { applyTheme } from '../utils/theme';
 
 const AuthContext = createContext(null);
 
@@ -18,10 +19,16 @@ export function AuthProvider({ children }) {
   // Only wait for /auth/me when there is a stored token to restore.
   const [loading, setLoading] = useState(() => Boolean(getToken()));
 
+  // The signed-in user's theme; SYSTEM when signed out.
+  useEffect(() => {
+    if (user) applyTheme(user.preferences?.theme);
+  }, [user]);
+
   const clearSession = useCallback(() => {
     clearToken();
     setTokenState(null);
     setUser(null);
+    applyTheme('SYSTEM');
   }, []);
 
   // Restore the session from a stored token on app start.
@@ -95,9 +102,14 @@ export function AuthProvider({ children }) {
     }
   }, [clearSession]);
 
+  // After saving preferences: keep the user object (and so the applied theme) in sync.
+  const setPreferences = useCallback((preferences) => {
+    setUser((current) => (current ? { ...current, preferences } : current));
+  }, []);
+
   const value = useMemo(
-    () => ({ user, token, loading, login, signup, logout }),
-    [user, token, loading, login, signup, logout],
+    () => ({ user, token, loading, login, signup, logout, setPreferences }),
+    [user, token, loading, login, signup, logout, setPreferences],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

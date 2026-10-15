@@ -1,6 +1,12 @@
 const pool = require('../config/db');
 const { sendMail, describeMailError } = require('../config/mailer');
 const { passwordChangedEmail } = require('../emails/passwordChangedEmail');
+const {
+  DEFAULT_PREFERENCES,
+  readPreferences,
+  parsePreferences,
+  savePreferences
+} = require('../utils/preferences');
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
@@ -56,7 +62,13 @@ exports.getProfile = async (req, res) => {
       return res.status(401).json({ error: 'Invalid or expired session' });
     }
 
-    res.json({ user: typeof profile === 'string' ? JSON.parse(profile) : profile });
+    const user = typeof profile === 'string' ? JSON.parse(profile) : profile;
+    // Preferences are cosmetic here: a failure must not log the user out.
+    user.preferences = await readPreferences(user.person_id).catch((prefError) => {
+      console.error('Reading preferences failed:', prefError.message);
+      return { ...DEFAULT_PREFERENCES };
+    });
+    res.json({ user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -146,4 +158,29 @@ exports.changePassword = async (req, res, next) => {
     message: 'Your password has been changed.',
     data: { endedSessions }
   });
+};
+
+// GET /api/auth/preferences - the logged-in user's preferences (defaults when never saved).
+exports.getPreferences = async (req, res, next) => {
+  try {
+    const preferences = await readPreferences(req.user.personId);
+    return res.json({ success: true, data: preferences });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+// PUT /api/auth/preferences { theme: 'LIGHT'|'DARK'|'SYSTEM', emailTxnAlerts: boolean }
+exports.updatePreferences = async (req, res, next) => {
+  const { value, error } = parsePreferences(req.body);
+  if (error) {
+    return res.status(400).json({ success: false, message: error });
+  }
+
+  try {
+    const preferences = await savePreferences(req.user.personId, value);
+    return res.json({ success: true, message: 'Preferences saved.', data: preferences });
+  } catch (err) {
+    return next(err);
+  }
 };

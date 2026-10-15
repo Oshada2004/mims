@@ -1,6 +1,8 @@
 const db = require('../config/db');
 const { sendMail, describeMailError } = require('../config/mailer');
 const { transferCodeEmail } = require('../emails/transferCodeEmail');
+const { transferAlertEmail } = require('../emails/transferAlertEmail');
+const { readPreferences } = require('../utils/preferences');
 const { generateCode, hashCode } = require('../utils/otp');
 
 // Matches DECIMAL(14,2): up to 12 digits before the point, up to 2 after.
@@ -73,16 +75,81 @@ function handleProcedureError(err, res, next) {
     return next(err);
 }
 
-async function sendCodeEmail({ to, code, amount, senderAccountNo, receiverAccountNo }) {
+async function readBankName() {
     const [[bank]] = await db.query('SELECT bank_name FROM BANK_META_DATA ORDER BY bank_id LIMIT 1');
+    return bank?.bank_name || 'MIMS';
+}
+
+async function sendCodeEmail({ to, code, amount, senderAccountNo, receiverAccountNo }) {
     const mail = transferCodeEmail({
         code,
         amount,
         senderAccountNo,
         receiverAccountNo,
-        bankName: bank?.bank_name || 'MIMS'
+        bankName: await readBankName()
     });
     await sendMail({ to, ...mail });
+}
+
+// After a COMMITTED transfer: "you sent" to the customer who made it and "you received" to every
+// holder of the receiving account with a login and an email, each only if their email_txn_alerts
+// preference is on (default on). Best effort: failures are logged, never reported to the caller.
+async function sendTransferAlerts(txnId, sender) {
+    const [[transfer]] = await db.query(
+        `SELECT a.sender_acc_no, a.receiver_acc_no, a.amount, t.txn_timestamp
+           FROM AtoA_TRANSFER_LOG a
+           JOIN TRANSACTION_LOG t ON t.txn_id = a.txn_id
+          WHERE a.txn_id = ?`,
+        [txnId]
+    );
+    if (!transfer) return;
+
+    const [receivers] = await db.query(
+        `SELECT DISTINCT u.person_id, u.email, p.first_name
+           FROM ACCOUNT_HOLDER ah
+           JOIN AUTH_USER u ON u.person_id = ah.customer_person_id
+           JOIN PERSON p ON p.person_id = u.person_id
+           LEFT JOIN USER_PREFERENCES up ON up.person_id = u.person_id
+          WHERE ah.account_no = ?
+            AND COALESCE(up.email_txn_alerts, TRUE)
+            AND u.email IS NOT NULL AND u.email <> ''`,
+        [transfer.receiver_acc_no]
+    );
+
+    const recipients = receivers.map((row) => ({
+        personId: row.person_id, email: row.email, firstName: row.first_name, direction: 'RECEIVED'
+    }));
+    if (sender.email && (await readPreferences(sender.personId)).emailTxnAlerts) {
+        recipients.unshift({
+            personId: sender.personId, email: sender.email, firstName: sender.first_name, direction: 'SENT'
+        });
+    }
+    if (recipients.length === 0) return;
+
+    const bankName = await readBankName();
+    const results = await Promise.allSettled(recipients.map((recipient) => sendMail({
+        to: recipient.email,
+        ...transferAlertEmail({
+            direction: recipient.direction,
+            firstName: recipient.firstName,
+            amount: transfer.amount,
+            senderAccountNo: transfer.sender_acc_no,
+            receiverAccountNo: transfer.receiver_acc_no,
+            txnId,
+            completedAt: transfer.txn_timestamp,
+            bankName
+        })
+    })));
+
+    results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+            const { personId, direction } = recipients[index];
+            console.error(
+                `Transfer alert email (${direction}) failed for person ${personId}, txn ${txnId}: `
+                + describeMailError(result.reason)
+            );
+        }
+    });
 }
 
 async function cancelChallenge(challengeId, personId) {
@@ -310,6 +377,11 @@ exports.confirm = async (req, res, next) => {
         const [[result]] = await connection.query(
             'SELECT @p_txn_id AS txnId, @p_sender_balance_after AS senderBalanceAfter'
         );
+
+        // The procedure has committed: alerts can no longer affect the transfer.
+        sendTransferAlerts(result.txnId, req.user).catch((alertError) => {
+            console.error(`Transfer alerts for txn ${result.txnId} failed: ${alertError.message}`);
+        });
 
         return res.json({
             success: true,

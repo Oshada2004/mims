@@ -1,5 +1,6 @@
 :root {
-  /* Colours */
+  /* Colours (light theme; dark values below) */
+  color-scheme: light;
   --color-bg: #ffffff;
   --color-surface: #ffffff;
   --color-surface-muted: #fafafa;
@@ -84,6 +85,77 @@
   --z-drawer: 40;
   --z-overlay: 50;
   --z-modal: 60;
+}
+
+/*
+ * Dark theme. data-theme on <html> is set from the user's preference (src/utils/theme.js):
+ * "dark" always, "light" never, "system" (or not set yet) follows the operating system.
+ * The two blocks hold the same values. Only colours change; the orange accent stays.
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #0f1115;
+  --color-surface: #171a21;
+  --color-surface-muted: #1d2129;
+  --color-text: #f3f4f6;
+  --color-text-muted: #9ca3af;
+  --color-text-inverse: #ffffff;
+  --color-border: #2a2f3a;
+  --color-border-strong: #3a4150;
+
+  --color-accent: #f97316;
+  --color-accent-hover: #fb923c;
+  --color-accent-light: #33200f;
+
+  --color-success: #4ade80;
+  --color-success-light: #0f2a1a;
+  --color-warning: #fbbf24;
+  --color-warning-light: #2d230a;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-danger-light: #2d1414;
+  --color-info: #e5e7eb;
+  --color-info-light: #1d2129;
+
+  --color-overlay: rgba(0, 0, 0, 0.6);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    color-scheme: dark;
+    --color-bg: #0f1115;
+    --color-surface: #171a21;
+    --color-surface-muted: #1d2129;
+    --color-text: #f3f4f6;
+    --color-text-muted: #9ca3af;
+    --color-text-inverse: #ffffff;
+    --color-border: #2a2f3a;
+    --color-border-strong: #3a4150;
+
+    --color-accent: #f97316;
+    --color-accent-hover: #fb923c;
+    --color-accent-light: #33200f;
+
+    --color-success: #4ade80;
+    --color-success-light: #0f2a1a;
+    --color-warning: #fbbf24;
+    --color-warning-light: #2d230a;
+    --color-danger: #ef4444;
+    --color-danger-hover: #dc2626;
+    --color-danger-light: #2d1414;
+    --color-info: #e5e7eb;
+    --color-info-light: #1d2129;
+
+    --color-overlay: rgba(0, 0, 0, 0.6);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+  }
 }
 
 /* Global resets and base element styles. */
