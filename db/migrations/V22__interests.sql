@@ -230,3 +230,12 @@ ON COMPLETION PRESERVE
 ENABLE
 DO CALL sp_run_savings_interest_accrual(CURDATE());
 
+DROP EVENT IF EXISTS ev_fd_interest_payout;
+
+CREATE EVENT ev_fd_interest_payout
+ON SCHEDULE EVERY 1 DAY
+STARTS (TIMESTAMP(CURDATE() + INTERVAL 1 DAY, '00:05:00'))
+ON COMPLETION PRESERVE
+ENABLE
+DO CALL sp_run_fd_interest_payout(CURDATE());
+
