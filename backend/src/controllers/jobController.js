@@ -1,7 +1,8 @@
 const db = require('../config/db');
+const { bankToday } = require('../config/timezone');
 
 exports.triggerSavingsInterest = async (req, res, next) => {
-    const runDate = req.body.runDate || new Date().toISOString().slice(0, 10);
+    const runDate = req.body?.runDate || bankToday();
     try {
         await db.query('CALL sp_run_savings_interest_accrual(?)', [runDate]);
         return res.status(200).json({
@@ -14,7 +15,7 @@ exports.triggerSavingsInterest = async (req, res, next) => {
 };
 
 exports.triggerFDInterest = async (req, res, next) => {
-    const runDate = req.body.runDate || new Date().toISOString().slice(0, 10);
+    const runDate = req.body?.runDate || bankToday();
     try {
         await db.query('CALL sp_run_fd_interest_payout(?)', [runDate]);
         return res.status(200).json({

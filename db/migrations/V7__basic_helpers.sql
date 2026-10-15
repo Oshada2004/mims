@@ -1,5 +1,27 @@
 DELIMITER $$
 
+DROP TRIGGER IF EXISTS trg_bi_atoa_transfer_log$$
+CREATE TRIGGER trg_bi_atoa_transfer_log
+BEFORE INSERT ON AtoA_TRANSFER_LOG
+FOR EACH ROW
+BEGIN
+    IF NEW.sender_acc_no IS NOT NULL AND NEW.receiver_acc_no IS NOT NULL AND NEW.sender_acc_no = NEW.receiver_acc_no THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Sender and receiver accounts must be distinct.';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS trg_bu_atoa_transfer_log$$
+CREATE TRIGGER trg_bu_atoa_transfer_log
+BEFORE UPDATE ON AtoA_TRANSFER_LOG
+FOR EACH ROW
+BEGIN
+    IF NEW.sender_acc_no IS NOT NULL AND NEW.receiver_acc_no IS NOT NULL AND NEW.sender_acc_no = NEW.receiver_acc_no THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Sender and receiver accounts must be distinct.';
+    END IF;
+END$$
+
 -- Acc type age validation
 DROP FUNCTION IF EXISTS fn_is_plan_eligible$$
 CREATE FUNCTION fn_is_plan_eligible(p_plan_code VARCHAR(10),p_dob DATE) 

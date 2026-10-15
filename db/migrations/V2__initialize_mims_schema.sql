@@ -174,7 +174,7 @@ CREATE TABLE ACCOUNT_HOLDER(
 );
 
 CREATE TABLE FIXED_DEPOSIT(
-    fd_id VARCHAR(15) NOT NULL,
+    fd_id CHAR(20) NOT NULL,
     active_acc_no VARCHAR(15) NULL,
     acc_no VARCHAR(15) NOT NULL,
     term_code ENUM('6M','1Y','3Y') NOT NULL,
@@ -229,9 +229,14 @@ CREATE TABLE TRANSACTION_LOG(
 
 CREATE TABLE DEPOSIT_WITHDRAW_LOG(
     txn_id BIGINT NOT NULL,
-    txn_type ENUM('DEPOSIT','WITHDRAWAL') NOT NULL,
+    txn_type ENUM(
+    'DEPOSIT',
+    'WITHDRAWAL',
+    'FD_FUNDING',
+    'FD_PRINCIPAL_RETURN') NOT NULL,
     agent_person_id INT NULL,
     sav_acc_no VARCHAR(15) NULL,
+    fd_id CHAR(20) NULL,
     amount NUMERIC(14,2) NOT NULL,
     balance_after NUMERIC(14,2) NOT NULL,
     ref_text VARCHAR(50) NULL,
@@ -245,14 +250,17 @@ CREATE TABLE DEPOSIT_WITHDRAW_LOG(
         ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_dw_agent FOREIGN KEY(agent_person_id) 
         REFERENCES PERSON(person_id) 
-        ON DELETE SET NULL ON UPDATE CASCADE
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_dw_fd FOREIGN KEY(fd_id)
+    REFERENCES FIXED_DEPOSIT(fd_id)
+    ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 CREATE TABLE INTEREST_LOG(
     txn_id BIGINT NOT NULL,
     account_type ENUM('FIXED','SAVINGS') NOT NULL,
     sav_acc_no VARCHAR(15) NULL,
-    fd_id VARCHAR(15) NULL,
+    fd_id CHAR(20) NULL,
     amount NUMERIC(14,2) NOT NULL,
     balance_after NUMERIC(14,2) NOT NULL,
     ref_text VARCHAR(50) NULL,
@@ -279,18 +287,17 @@ CREATE TABLE AtoA_TRANSFER_LOG(
     receiver_balance_after NUMERIC(14,2) NOT NULL,
     ref_text VARCHAR(50) NULL,
     PRIMARY KEY(txn_id),
-    CONSTRAINT chk_aca_amount CHECK (amount > 0),
-    CONSTRAINT chk_aca_distinct_accounts CHECK (sender_acc_no <> receiver_acc_no),
-    CONSTRAINT fk_aca_txn FOREIGN KEY(txn_id)
+    CONSTRAINT chk_atoa_amount CHECK (amount > 0),
+    CONSTRAINT fk_atoa_txn FOREIGN KEY(txn_id)
         REFERENCES TRANSACTION_LOG(txn_id)
         ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_atoa_sender FOREIGN KEY(sender_acc_no) 
-        REFERENCES SAVINGS_ACCOUNT(account_no) 
+    CONSTRAINT fk_atoa_sender FOREIGN KEY(sender_acc_no)
+        REFERENCES SAVINGS_ACCOUNT(account_no)
         ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_atoa_receiver FOREIGN KEY(receiver_acc_no) 
-        REFERENCES SAVINGS_ACCOUNT(account_no) 
-        ON DELETE SET NULL ON UPDATE CASCADE,    
-    CONSTRAINT fk_atoa_agent FOREIGN KEY(agent_person_id) 
-        REFERENCES PERSON(person_id) 
+    CONSTRAINT fk_atoa_receiver FOREIGN KEY(receiver_acc_no)
+        REFERENCES SAVINGS_ACCOUNT(account_no)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_atoa_agent FOREIGN KEY(agent_person_id)
+        REFERENCES PERSON(person_id)
         ON DELETE SET NULL ON UPDATE CASCADE
 );

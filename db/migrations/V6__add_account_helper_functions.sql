@@ -23,7 +23,7 @@ BEGIN
 END$$
 
 DROP FUNCTION IF EXISTS get_fixed_deposit_by_id$$
-CREATE FUNCTION get_fixed_deposit_by_id(p_fd_id VARCHAR(15))
+CREATE FUNCTION get_fixed_deposit_by_id(p_fd_id CHAR(20))
 RETURNS JSON
 READS SQL DATA
 BEGIN

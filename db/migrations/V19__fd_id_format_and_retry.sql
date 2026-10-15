@@ -1,19 +1,3 @@
-ALTER TABLE TRANSACTION_LOG
-DROP FOREIGN KEY fk_txn_fd;
-
-ALTER TABLE FIXED_DEPOSIT
-MODIFY COLUMN fd_id CHAR(20) NOT NULL;
-
-ALTER TABLE TRANSACTION_LOG
-MODIFY COLUMN fd_id CHAR(20) NULL;
-
-ALTER TABLE TRANSACTION_LOG
-ADD CONSTRAINT fk_txn_fd
-FOREIGN KEY (fd_id)
-REFERENCES FIXED_DEPOSIT(fd_id)
-ON DELETE SET NULL
-ON UPDATE CASCADE;
-
 DELIMITER $$
 
 DROP PROCEDURE IF EXISTS sp_open_fixed_deposit$$
@@ -36,6 +20,7 @@ BEGIN
     DECLARE v_duplicate BOOLEAN DEFAULT FALSE;
     DECLARE v_candidate_id CHAR(20);
     DECLARE v_existing_fd_id CHAR(20) DEFAULT NULL;
+    DECLARE v_txn_id BIGINT;
 
     SET p_fd_id = NULL; -- ie no fd has been created yet
 
@@ -204,26 +189,36 @@ BEGIN
 
         END LOOP fd_id_retry;
         INSERT INTO TRANSACTION_LOG (
-            sav_acc_no,
-            agent_person_id,
-            fd_id,
             txn_type,
-            amount,
-            balance_after,
-            ref_text,
             txn_timestamp
         )
         VALUES (
-            p_savings_acc_no,
-            p_agent_id,
-            p_fd_id,
-            'WITHDRAWAL',
-            p_principal,
-            v_balance - p_principal,
-            'Principal allocation to fixed deposit',
+            'DEPOSIT_WITHDRAWAL',
             NOW()
         );
 
+        SET v_txn_id = LAST_INSERT_ID();
+
+        INSERT INTO DEPOSIT_WITHDRAW_LOG (
+            txn_id,
+            txn_type,
+            agent_person_id,
+            sav_acc_no,
+            fd_id,
+            amount,
+            balance_after,
+            ref_text
+        )
+        VALUES (
+            v_txn_id,
+            'FD_FUNDING',
+            p_agent_id,
+            p_savings_acc_no,
+            p_fd_id,
+            p_principal,
+            v_balance - p_principal,
+            'Principal allocation to fixed deposit'
+        );
         UPDATE SAVINGS_ACCOUNT
         SET balance = balance - p_principal,
             last_txn_date = CURDATE()
@@ -253,6 +248,7 @@ BEGIN
     DECLARE v_balance DECIMAL(14,2) DEFAULT NULL;
     DECLARE v_account_agent_id INT DEFAULT NULL;
     DECLARE v_maturity_date DATE DEFAULT NULL;
+    DECLARE v_txn_id BIGINT;
 
     IF p_fd_id IS NULL OR TRIM(p_fd_id) = '' THEN
         SIGNAL SQLSTATE '45000'
@@ -350,24 +346,35 @@ BEGIN
         WHERE account_no = v_acc_no;
 
         INSERT INTO TRANSACTION_LOG (
-            sav_acc_no,
-            agent_person_id,
-            fd_id,
             txn_type,
-            amount,
-            balance_after,
-            ref_text,
             txn_timestamp
         )
         VALUES (
-            v_acc_no,
+            'DEPOSIT_WITHDRAWAL',
+            NOW()
+        );
+
+        SET v_txn_id = LAST_INSERT_ID();
+
+        INSERT INTO DEPOSIT_WITHDRAW_LOG (
+            txn_id,
+            txn_type,
+            agent_person_id,
+            sav_acc_no,
+            fd_id,
+            amount,
+            balance_after,
+            ref_text
+        )
+        VALUES (
+            v_txn_id,
+            'FD_PRINCIPAL_RETURN',
             p_agent_id,
+            v_acc_no,
             p_fd_id,
-            'DEPOSIT',
             v_principal,
             v_balance + v_principal,
-            'FD early closure principal return',
-            NOW()
+            'FD early closure principal return'
         );
 
         UPDATE FIXED_DEPOSIT
@@ -405,6 +412,7 @@ BEGIN
     DECLARE v_next_accrual_date DATE;
     DECLARE v_fd_status VARCHAR(25);
     DECLARE v_account_status VARCHAR(10);
+    DECLARE v_txn_id BIGINT;
 
     DECLARE cur_fd CURSOR FOR
         SELECT fd_id, acc_no
@@ -520,25 +528,28 @@ BEGIN
 
             SET v_balance = v_balance + v_interest;
 
-            INSERT INTO TRANSACTION_LOG (
+           INSERT INTO TRANSACTION_LOG (txn_type, txn_timestamp)
+            VALUES ('INTEREST', NOW());
+
+            SET v_txn_id = LAST_INSERT_ID();
+
+            INSERT INTO INTEREST_LOG (
+                txn_id,
+                account_type,
                 sav_acc_no,
-                agent_person_id,
                 fd_id,
-                txn_type,
                 amount,
                 balance_after,
-                ref_text,
-                txn_timestamp
+                ref_text
             )
             VALUES (
+                v_txn_id,
+                'FIXED',
                 v_acc_no,
-                NULL,
                 v_fd_id,
-                'FD_INTEREST',
                 v_interest,
                 v_balance,
-                CONCAT('FD interest due ', v_next_accrual_date),
-                NOW()
+                CONCAT('FD interest due ', v_next_accrual_date)
             );
 
             SET v_next_accrual_date =
@@ -559,25 +570,30 @@ BEGIN
 
             SET v_balance = v_balance + v_principal;
 
-            INSERT INTO TRANSACTION_LOG (
-                sav_acc_no,
-                agent_person_id,
-                fd_id,
+            INSERT INTO TRANSACTION_LOG (txn_type, txn_timestamp)
+            VALUES ('DEPOSIT_WITHDRAWAL', NOW());
+
+            SET v_txn_id = LAST_INSERT_ID();
+
+            INSERT INTO DEPOSIT_WITHDRAW_LOG (
+                txn_id,
                 txn_type,
+                agent_person_id,
+                sav_acc_no,
+                fd_id,
                 amount,
                 balance_after,
-                ref_text,
-                txn_timestamp
+                ref_text
             )
             VALUES (
-                v_acc_no,
+                v_txn_id,
+                'FD_PRINCIPAL_RETURN',
                 NULL,
+                v_acc_no,
                 v_fd_id,
-                'DEPOSIT',
                 v_principal,
                 v_balance,
-                'FD maturity principal return',
-                NOW()
+                'FD maturity principal return'
             );
 
             UPDATE FIXED_DEPOSIT
