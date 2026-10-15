@@ -80,12 +80,13 @@ async function readBankName() {
     return bank?.bank_name || 'MIMS';
 }
 
-async function sendCodeEmail({ to, code, amount, senderAccountNo, receiverAccountNo }) {
+async function sendCodeEmail({ to, code, amount, senderAccountNo, receiverAccountNo, expiresAt }) {
     const mail = transferCodeEmail({
         code,
         amount,
         senderAccountNo,
         receiverAccountNo,
+        expiresAt,
         bankName: await readBankName()
     });
     await sendMail({ to, ...mail });
@@ -272,8 +273,16 @@ exports.initiate = async (req, res, next) => {
             hashCode(challengeId, code)
         ]);
 
+        const challenge = await readChallenge(challengeId, personId);
         try {
-            await sendCodeEmail({ to: req.user.email, code, amount, senderAccountNo, receiverAccountNo });
+            await sendCodeEmail({
+                to: req.user.email,
+                code,
+                amount,
+                senderAccountNo,
+                receiverAccountNo,
+                expiresAt: challenge.expires_at
+            });
         } catch (mailError) {
             console.error(`Transfer code email failed for person ${personId}: ${describeMailError(mailError)}`);
             await cancelChallenge(challengeId, personId);
@@ -284,15 +293,16 @@ exports.initiate = async (req, res, next) => {
             });
         }
 
-        const challenge = await readChallenge(challengeId, personId);
+        // Read again: sending can take a few seconds, and the countdown must start from now.
+        const current = await readChallenge(challengeId, personId);
         return res.status(201).json({
             success: true,
             message: 'A confirmation code has been sent to your email.',
             data: {
                 challengeId,
                 maskedEmail: maskEmail(req.user.email),
-                expiresAt: challenge.expires_at,
-                expiresInSeconds: challenge.expires_in_seconds
+                expiresAt: current.expires_at,
+                expiresInSeconds: current.expires_in_seconds
             }
         });
     } catch (err) {
@@ -324,7 +334,8 @@ exports.resend = async (req, res, next) => {
                 code,
                 amount: challenge.amount,
                 senderAccountNo: challenge.sender,
-                receiverAccountNo: challenge.receiver
+                receiverAccountNo: challenge.receiver,
+                expiresAt: challenge.expires_at
             });
         } catch (mailError) {
             console.error(`Transfer code email failed for person ${personId}: ${describeMailError(mailError)}`);
@@ -336,14 +347,16 @@ exports.resend = async (req, res, next) => {
             });
         }
 
+        // Read again: sending can take a few seconds, and the countdown must start from now.
+        const current = await readChallenge(challengeId, personId);
         return res.json({
             success: true,
             message: 'A new confirmation code has been sent to your email.',
             data: {
                 challengeId,
                 maskedEmail: maskEmail(req.user.email),
-                expiresAt: challenge.expires_at,
-                expiresInSeconds: challenge.expires_in_seconds
+                expiresAt: current.expires_at,
+                expiresInSeconds: current.expires_in_seconds
             }
         });
     } catch (err) {

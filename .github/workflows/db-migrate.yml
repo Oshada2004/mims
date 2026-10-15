@@ -3,7 +3,7 @@ name: Run Database Migrations
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'db/**'
   workflow_dispatch:

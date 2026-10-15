@@ -7,14 +7,11 @@ import PageHeader from '../../components/ui/PageHeader';
 import Table from '../../components/ui/Table';
 import { useApi } from '../../api/useApi';
 import { getAccountSummary, getActiveFds, getAgentTransactions, getInterestDistribution } from '../../api/services/reportService';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatDate, toIsoDate } from '../../utils/format';
 import { todayIso } from '../../utils/validation';
 import '../Pages.css';
 import './AdminReports.css';
 
-const today = todayIso();
-const monthStart = `${today.slice(0, 8)}01`;
-const currentYear = Number(today.slice(0, 4));
 const REPORTS = [
   { value: 'accounts', label: 'Savings accounts' },
   { value: 'agents', label: 'Agent transactions' },
@@ -68,6 +65,10 @@ const interestColumns = [
 ];
 
 export default function AdminReports() {
+  // Bank dates ('YYYY-MM-DD', Sri Lanka time), fixed when the page opens.
+  const [today] = useState(() => todayIso());
+  const monthStart = `${today.slice(0, 8)}01`;
+  const currentYear = Number(today.slice(0, 4));
   const [reportType, setReportType] = useState('accounts');
   const [startDate, setStartDate] = useState(monthStart);
   const [endDate, setEndDate] = useState(today);
@@ -88,7 +89,7 @@ export default function AdminReports() {
     agents: { title: 'Agent transaction report', state: agents, rows: agents.data ?? [], columns: agentColumns,
       exportColumns: [{ label: 'Agent ID', value: (r) => r.agentId }, { label: 'Agent', value: (r) => r.agentName }, { label: 'Branch', value: (r) => r.branchName }, { label: 'Transactions', value: (r) => r.totalTransactions }, { label: 'Gross value (LKR)', value: (r) => r.grossValue }, { label: 'Net value (LKR)', value: (r) => r.netValue }] },
     fds: { title: 'Active fixed deposit report', state: fds, rows: fds.data ?? [], columns: fdColumns,
-      exportColumns: [{ label: 'FD ID', value: (r) => r.fdId }, { label: 'Account', value: (r) => r.accountNo }, { label: 'Term', value: (r) => r.termCode }, { label: 'Principal (LKR)', value: (r) => r.principal }, { label: 'Interest rate', value: (r) => r.interestRate }, { label: 'Opened date', value: (r) => r.openedDate }, { label: 'Maturity date', value: (r) => r.maturityDate }, { label: 'Next payout date', value: (r) => r.nextPayoutDate }] },
+      exportColumns: [{ label: 'FD ID', value: (r) => r.fdId }, { label: 'Account', value: (r) => r.accountNo }, { label: 'Term', value: (r) => r.termCode }, { label: 'Principal (LKR)', value: (r) => r.principal }, { label: 'Interest rate', value: (r) => r.interestRate }, { label: 'Opened date', value: (r) => toIsoDate(r.openedDate) }, { label: 'Maturity date', value: (r) => toIsoDate(r.maturityDate) }, { label: 'Next payout date', value: (r) => toIsoDate(r.nextPayoutDate) }] },
     interest: { title: 'Interest distribution report', state: interest, rows: interest.data ?? [], columns: interestColumns,
       exportColumns: [{ label: 'Period', value: (r) => r.label }, { label: 'Plan', value: (r) => r.planCode }, { label: 'Accounts receiving interest', value: (r) => r.accountsReceivingInterest }, { label: 'Payout count', value: (r) => r.payoutCount }, { label: 'Savings interest (LKR)', value: (r) => r.savingsInterest }, { label: 'FD interest (LKR)', value: (r) => r.fdInterest }, { label: 'Total interest (LKR)', value: (r) => r.totalInterest }] },
   };

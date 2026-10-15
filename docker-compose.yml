@@ -26,7 +26,7 @@ services:
     image: flyway/flyway:10
     command: -connectRetries=60 migrate
     environment:
-      FLYWAY_URL: jdbc:mysql://database:3306/${DB_NAME}?allowPublicKeyRetrieval=true&useSSL=false
+      FLYWAY_URL: jdbc:mysql://database:3306/${DB_NAME}?allowPublicKeyRetrieval=true&useSSL=false&sessionVariables=time_zone='+05:30'
       FLYWAY_USER: ${DB_USER}
       FLYWAY_PASSWORD: ${DB_PASSWORD}
       FLYWAY_BASELINE_ON_MIGRATE: "true"

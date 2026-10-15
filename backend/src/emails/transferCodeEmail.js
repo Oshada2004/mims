@@ -1,10 +1,11 @@
 // Email sent with a transfer confirmation code.
 
 const { formatAmount, maskAccount, escapeHtml } = require('./format');
+const { formatBankDateTime } = require('../config/timezone');
 
 /**
  * @param {{ code: string, amount: string|number, senderAccountNo: string, receiverAccountNo: string,
- *           bankName?: string, minutesValid?: number }} details
+ *           expiresAt?: Date, bankName?: string, minutesValid?: number }} details
  * @returns {{ subject: string, text: string, html: string }}
  */
 function transferCodeEmail({
@@ -12,9 +13,14 @@ function transferCodeEmail({
   amount,
   senderAccountNo,
   receiverAccountNo,
+  expiresAt,
   bankName = 'MIMS',
   minutesValid = 5
 }) {
+  // "valid for 5 minutes, until 15 Oct 2026, 12:46 (Sri Lanka time)"
+  const validity = expiresAt
+    ? `${minutesValid} minutes, until ${formatBankDateTime(expiresAt)}`
+    : `${minutesValid} minutes`;
   const formattedAmount = formatAmount(amount);
   const from = maskAccount(senderAccountNo);
   const to = maskAccount(receiverAccountNo);
@@ -28,7 +34,7 @@ function transferCodeEmail({
     `From:   ${from}`,
     `To:     ${to}`,
     '',
-    `This code is valid for ${minutesValid} minutes.`,
+    `This code is valid for ${validity}.`,
     `Never share this code with anyone, including ${bankName} staff. We will never ask you for it.`,
     '',
     'Did not request this transfer? Do not enter the code. Change your password and contact your',
@@ -49,7 +55,7 @@ function transferCodeEmail({
           <tr><td style="padding:8px 12px;color:#6b7280;">From</td><td style="padding:8px 12px;">${escapeHtml(from)}</td></tr>
           <tr><td style="padding:8px 12px;color:#6b7280;">To</td><td style="padding:8px 12px;">${escapeHtml(to)}</td></tr>
         </table>
-        <p style="margin:0 0 8px;font-size:14px;">This code is valid for <strong>${minutesValid} minutes</strong>.</p>
+        <p style="margin:0 0 8px;font-size:14px;">This code is valid for <strong>${escapeHtml(validity)}</strong>.</p>
         <p style="margin:0 0 16px;font-size:14px;"><strong>Never share this code</strong> with anyone, including ${escapeHtml(bankName)} staff. We will never ask you for it.</p>
         <p style="margin:0;padding-top:16px;border-top:1px solid #e5e7eb;font-size:13px;color:#6b7280;">
           Did not request this transfer? Do not enter the code. Change your password and contact your branch straight away.

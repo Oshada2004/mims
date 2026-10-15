@@ -10,7 +10,7 @@ import { useApi } from '../../api/useApi';
 import { getAccountSummary, getActiveFds, getAgentTransactions } from '../../api/services/reportService';
 import { STATUS_BADGE } from '../../constants/status';
 import { useAuth } from '../../context/AuthContext';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatDate, toIsoDate } from '../../utils/format';
 import { todayIso } from '../../utils/validation';
 import '../Pages.css';
 
@@ -62,7 +62,7 @@ export default function StaffDashboard() {
     [],
   );
 
-  const dueSoon = (fds.data ?? []).filter((fd) => fd.nextPayoutDate && fd.nextPayoutDate.slice(0, 10) <= dueBy);
+  const dueSoon = (fds.data ?? []).filter((fd) => fd.nextPayoutDate && toIsoDate(fd.nextPayoutDate) <= dueBy);
   const accountRows = accounts.data ?? [];
   const totalBalance = accountRows.reduce((sum, row) => sum + (row.balance ?? 0), 0);
   const recentAccounts = [...accountRows]

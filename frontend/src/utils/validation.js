@@ -1,3 +1,4 @@
+import { toIsoDate } from './format';
 
 const AMOUNT_PATTERN = /^\d{1,12}(\.\d{1,2})?$/;
 
@@ -8,24 +9,22 @@ export function isValidDate(text) {
 }
 
 
-export function ageInYears(dob, today = new Date()) {
-  if (!dob) return null;
-  const birth = new Date(String(dob).length === 10 ? `${dob}T00:00:00` : dob);
-  if (Number.isNaN(birth.getTime())) return null;
-  let age = today.getFullYear() - birth.getFullYear();
-  const beforeBirthday =
-    today.getMonth() < birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate());
-  if (beforeBirthday) age -= 1;
+// Whole years between a date of birth and today in bank time (or `today`: a Date or 'YYYY-MM-DD').
+export function ageInYears(dob, today = todayIso()) {
+  const birth = dob ? toIsoDate(dob) : '';
+  const now = toIsoDate(today);
+  if (!birth || !now) return null;
+  const [birthYear, birthMonth, birthDay] = birth.split('-').map(Number);
+  const [year, month, day] = now.split('-').map(Number);
+  let age = year - birthYear;
+  if (month < birthMonth || (month === birthMonth && day < birthDay)) age -= 1;
   return age;
 }
 
-
+// Today's date in bank time as 'YYYY-MM-DD', optionally moved by whole days.
 export function todayIso(offsetDays = 0) {
-  const date = new Date();
-  date.setDate(date.getDate() + offsetDays);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const [year, month, day] = toIsoDate(new Date()).split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + offsetDays)).toISOString().slice(0, 10);
 }
 
 export function isValidNic(text) {
