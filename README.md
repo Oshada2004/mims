@@ -66,6 +66,92 @@ To run migrations without starting the frontend and backend:
 docker compose up database flyway
 ```
 
+## Sending real emails
+
+Transfer confirmation codes and other notices are sent by `backend/src/config/mailer.js`.
+By default (`MAIL_TRANSPORT=smtp` with `SMTP_HOST=mailpit`) every email is caught by
+**Mailpit** and shown at http://localhost:8025. Nothing reaches a real inbox. All mail
+settings live in the project's `.env`, which the backend container reads through
+`env_file`. `.env` is git-ignored, so never put real passwords in `.env.example`.
+
+When the backend starts, it checks the mail connection and logs one line:
+
+```text
+Mail: ready (smtp smtp.gmail.com:465 (TLS), from your.address@gmail.com).
+Mail: NOT ready (smtp smtp.gmail.com:465 (TLS)): EAUTH 535 Invalid login: ...
+```
+
+Show it with `docker compose logs backend | grep Mail:`.
+
+### Gmail (SMTP with an App Password)
+
+1. Sign in to the Google account that will send the emails and open
+   https://myaccount.google.com/security.
+2. Turn on **2-Step Verification**. App Passwords are only available with it.
+3. Open https://myaccount.google.com/apppasswords, enter a name (for example `MIMS`) and
+   click **Create**. Copy the 16-letter password. Google shows it only once.
+4. Put these values in `.env`:
+
+   ```env
+   MAIL_TRANSPORT=smtp
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_SECURE=true
+   SMTP_USER=your.address@gmail.com
+   SMTP_PASS=abcdefghijklmnop        # the App Password, spaces removed
+   MAIL_FROM=MIMS Bank <your.address@gmail.com>
+   ```
+
+   `MAIL_FROM` must use the same Gmail address as `SMTP_USER`. Otherwise Gmail rewrites
+   the sender, or the mail is marked as spam.
+5. Recreate the backend so it reads the new values, then send a test email:
+
+   ```bash
+   docker compose up -d --force-recreate backend
+   docker compose logs backend | grep Mail:
+   docker compose exec backend npm run mail:test -- someone@example.com
+   ```
+
+   The script prints `Sent.` or the provider's error, such as `EAUTH 535 Invalid login`
+   (wrong App Password) or `ETIMEDOUT` (the host blocks SMTP ports; use the HTTP option
+   below).
+6. **Check the spam folder.** The first emails from a new sender often land there. Mark
+   one as "Not spam".
+
+### Switching back to Mailpit
+
+```env
+MAIL_TRANSPORT=smtp
+SMTP_HOST=mailpit
+SMTP_PORT=1025
+SMTP_SECURE=
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM=MIMS <no-reply@mims.local>
+```
+
+Then run `docker compose up -d --force-recreate backend`.
+
+### HTTP API (Brevo) for hosts that block SMTP
+
+Some hosting providers block outgoing SMTP ports (25/465/587). In that case, send through
+[Brevo](https://www.brevo.com)'s HTTP API on port 443. The free plan allows 300 emails a day.
+
+1. Create a Brevo account. Under **Senders, domains & dedicated IPs → Senders**, add and
+   verify the address you will send from.
+2. Under **SMTP & API → API keys**, create an API key.
+3. Put these values in `.env`:
+
+   ```env
+   MAIL_TRANSPORT=http
+   MAIL_API_KEY=xkeysib-...
+   MAIL_FROM=MIMS Bank <verified.sender@example.com>
+   ```
+
+   The `SMTP_*` values are ignored in this mode.
+4. Recreate the backend and run `npm run mail:test` as above. A wrong key shows up as
+   `unauthorized 401 Key not found`.
+
 ## Folder Structure
 
 ```text

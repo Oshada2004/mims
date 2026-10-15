@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-// Fail fast on missing security configuration instead of failing on the first transfer.
+// Fail fast on missing security or mail configuration instead of failing on the first transfer.
 const { assertOtpConfig } = require('./utils/otp');
+let verifyMailer;
 try {
   assertOtpConfig();
+  ({ verifyMailer } = require('./config/mailer'));
 } catch (error) {
   console.error(`Startup aborted: ${error.message}`);
   process.exit(1);
@@ -73,4 +75,6 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`MIMS API running on port ${PORT}`);
+  // Only logs the result: the API keeps running so a mail problem can be fixed without downtime.
+  verifyMailer();
 });

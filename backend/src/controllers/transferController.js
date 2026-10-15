@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const { sendMail } = require('../config/mailer');
+const { sendMail, describeMailError } = require('../config/mailer');
 const { transferCodeEmail } = require('../emails/transferCodeEmail');
 const { generateCode, hashCode } = require('../utils/otp');
 
@@ -208,7 +208,7 @@ exports.initiate = async (req, res, next) => {
         try {
             await sendCodeEmail({ to: req.user.email, code, amount, senderAccountNo, receiverAccountNo });
         } catch (mailError) {
-            console.error('Transfer code email failed:', mailError.message);
+            console.error(`Transfer code email failed for person ${personId}: ${describeMailError(mailError)}`);
             await cancelChallenge(challengeId, personId);
             return res.status(503).json({
                 success: false,
@@ -260,7 +260,7 @@ exports.resend = async (req, res, next) => {
                 receiverAccountNo: challenge.receiver
             });
         } catch (mailError) {
-            console.error('Transfer code email failed:', mailError.message);
+            console.error(`Transfer code email failed for person ${personId}: ${describeMailError(mailError)}`);
             await cancelChallenge(challengeId, personId);
             return res.status(503).json({
                 success: false,
