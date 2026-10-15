@@ -8,13 +8,15 @@ export const STATUS_BADGE = {
     SETTLED: 'neutral',
 };
 
+
+
 export const TXN_BADGE = {
     DEPOSIT: 'success',
     WITHDRAWAL: 'accent',
-    FD_FUNDING: 'neutral',
-    FD_PRINCIPAL_RETURN: 'neutral',
     SAVINGS_INTEREST: 'neutral',
     FD_INTEREST: 'neutral',
+    FD_FUNDING: 'accent',
+    FD_PRINCIPAL_RETURN: 'success',
     TRANSFER_IN: 'success',
     TRANSFER_OUT: 'accent',
 };

@@ -4,6 +4,7 @@ import {
   CirclePlus,
   LayoutDashboard,
   PiggyBank,
+  FileBarChart2,
   Settings,
   UserCircle,
   UserPlus,
@@ -22,6 +23,18 @@ export const NAVIGATION = {
     { label: 'Profile', path: '/admin/profile', icon: UserCircle },
     { label: 'Settings', path: '/admin/settings', icon: Settings },
   ],
+  [ROLES.ADMIN]: [
+  { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+  { label: 'Bank management', path: '/admin/banks', icon: Building2 },
+  { label: 'Agents', path: '/admin/agents', icon: UserCog },
+  { label: 'Customers', path: '/admin/customers', icon: Users },
+
+  // Add this entry
+  { label: 'Reports', path: '/admin/reports', icon: FileBarChart2 },
+
+  { label: 'Profile', path: '/admin/profile', icon: UserCircle },
+  { label: 'Settings', path: '/admin/settings', icon: Settings },
+],
   [ROLES.STAFF]: [
     { label: 'Dashboard', path: '/staff/dashboard', icon: LayoutDashboard },
     { label: 'Register customer', path: '/staff/register-customer', icon: UserPlus },
