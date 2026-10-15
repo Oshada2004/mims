@@ -287,18 +287,17 @@ CREATE TABLE AtoA_TRANSFER_LOG(
     receiver_balance_after NUMERIC(14,2) NOT NULL,
     ref_text VARCHAR(50) NULL,
     PRIMARY KEY(txn_id),
-    CONSTRAINT chk_aca_amount CHECK (amount > 0),
-    CONSTRAINT chk_aca_distinct_accounts CHECK (sender_acc_no <> receiver_acc_no),
-    CONSTRAINT fk_aca_txn FOREIGN KEY(txn_id)
+    CONSTRAINT chk_atoa_amount CHECK (amount > 0),
+    CONSTRAINT fk_atoa_txn FOREIGN KEY(txn_id)
         REFERENCES TRANSACTION_LOG(txn_id)
         ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_atoa_sender FOREIGN KEY(sender_acc_no) 
-        REFERENCES SAVINGS_ACCOUNT(account_no) 
+    CONSTRAINT fk_atoa_sender FOREIGN KEY(sender_acc_no)
+        REFERENCES SAVINGS_ACCOUNT(account_no)
         ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_atoa_receiver FOREIGN KEY(receiver_acc_no) 
-        REFERENCES SAVINGS_ACCOUNT(account_no) 
-        ON DELETE SET NULL ON UPDATE CASCADE,    
-    CONSTRAINT fk_atoa_agent FOREIGN KEY(agent_person_id) 
-        REFERENCES PERSON(person_id) 
+    CONSTRAINT fk_atoa_receiver FOREIGN KEY(receiver_acc_no)
+        REFERENCES SAVINGS_ACCOUNT(account_no)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_atoa_agent FOREIGN KEY(agent_person_id)
+        REFERENCES PERSON(person_id)
         ON DELETE SET NULL ON UPDATE CASCADE
 );

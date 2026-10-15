@@ -6,19 +6,6 @@ function getSessionId(req) {
   );
 }
 
-// Register Credentials
-exports.register = async (req, res) => {
-  const { person_id, email, username, password, user_role } = req.body;
-  try {
-    await pool.query(
-      `CALL sp_register_user_credentials(?, ?, ?, ?, ?)`,
-      [person_id, email, username, password, user_role || 'CUSTOMER']
-    );
-    res.status(201).json({ message: 'User credentials created successfully.' });
-  } catch (error) {
-    res.status(400).json({ error: error.sqlMessage || error.message });
-  }
-};
 
 // Login
 exports.login = async (req, res) => {
