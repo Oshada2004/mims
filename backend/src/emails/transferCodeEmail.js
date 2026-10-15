@@ -1,24 +1,6 @@
 // Email sent with a transfer confirmation code.
 
-const amountFormatter = new Intl.NumberFormat('en-LK', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-});
-
-// "SA0361474564" -> "SA••••••4564": enough to recognise the account, not enough to reuse it.
-function maskAccount(accountNo) {
-  const text = String(accountNo || '');
-  if (text.length <= 6) return text;
-  return `${text.slice(0, 2)}${'•'.repeat(text.length - 6)}${text.slice(-4)}`;
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+const { formatAmount, maskAccount, escapeHtml } = require('./format');
 
 /**
  * @param {{ code: string, amount: string|number, senderAccountNo: string, receiverAccountNo: string,
@@ -33,7 +15,7 @@ function transferCodeEmail({
   bankName = 'MIMS',
   minutesValid = 5
 }) {
-  const formattedAmount = `LKR ${amountFormatter.format(Number(amount))}`;
+  const formattedAmount = formatAmount(amount);
   const from = maskAccount(senderAccountNo);
   const to = maskAccount(receiverAccountNo);
 

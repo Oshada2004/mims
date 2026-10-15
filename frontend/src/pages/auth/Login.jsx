@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import FormField from '../../components/ui/FormField';
 import Input from '../../components/ui/Input';
+import PasswordInput from '../../components/ui/PasswordInput';
 import { getErrorMessage } from '../../api/client';
 import { ROLE_HOME } from '../../constants/roles';
 import { useAuth } from '../../context/AuthContext';
@@ -81,22 +82,5 @@ export default function Login() {
         </Button>
       </form>
     </AuthLayout>
-  );
-}
-
-function PasswordInput({ visible, onToggle, ...props }) {
-  return (
-    <div className="password-input">
-      <Input type={visible ? 'text' : 'password'} {...props} />
-      <button
-        type="button"
-        className="password-input__toggle"
-        onClick={onToggle}
-        aria-label={visible ? 'Hide password' : 'Show password'}
-        aria-pressed={visible}
-      >
-        {visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-      </button>
-    </div>
   );
 }

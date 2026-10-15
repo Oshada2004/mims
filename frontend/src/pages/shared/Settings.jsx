@@ -1,18 +1,19 @@
-import { KeyRound, SlidersHorizontal } from 'lucide-react';
-import Alert from '../../components/ui/Alert';
+import { SlidersHorizontal } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import EmptyState from '../../components/ui/EmptyState';
 import PageHeader from '../../components/ui/PageHeader';
+import ChangePasswordForm from './ChangePasswordForm';
 import '../Pages.css';
 
 export default function Settings() {
   return (
     <div className="page">
       <PageHeader title="Settings" description="Security and display preferences." />
-      <Alert>This page will let you change your password and personalise the app.</Alert>
-
-      <Card title="Change password">
-        <EmptyState icon={KeyRound} title="Coming soon" message="You will be able to change your password here." compact />
+      <Card
+        title="Change password"
+        description="You stay signed in here; your other devices are signed out and you get an email."
+      >
+        <ChangePasswordForm />
       </Card>
 
       <Card title="Preferences">
