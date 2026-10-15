@@ -20,6 +20,7 @@ const reportRoutes = require('./routes/reportRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const fdRoutes = require('./routes/fdRoutes');
 const jobRoutes = require('./routes/jobRoutes');
+const transferRoutes = require('./routes/transferRoutes');
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/fd', fdRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/transfers', transferRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -53,6 +55,14 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
+  // Malformed or oversized JSON bodies are client errors, not server errors.
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'The request body is not valid JSON.' });
+  }
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'The request body is too large.' });
+  }
+
   console.error('Unhandled API error:', err.message);
   res.status(500).json({
     error: 'An unexpected server error occurred.'
