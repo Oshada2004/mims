@@ -271,6 +271,8 @@ BEGIN
     DECLARE v_fd_id CHAR(20);
     DECLARE v_txn_id BIGINT;
     DECLARE v_balance DECIMAL(14,2);
+    DECLARE v_sender_balance DECIMAL(14,2);
+    DECLARE v_receiver_balance DECIMAL(14,2);
     DECLARE v_cycle INT DEFAULT 0;
     DECLARE v_bank_start TIME;
     DECLARE v_bank_close TIME;
@@ -563,7 +565,10 @@ BEGIN
         CALL sp_open_fixed_deposit(v_account_eight, '1Y', 20000.00, v_agent_two, v_fd_id);
     END IF;
 
-    IF (SELECT COUNT(*) FROM TRANSACTION_LOG) < 100 THEN
+    IF (SELECT COUNT(*) FROM TRANSACTION_LOG) < 100
+       OR NOT EXISTS (
+           SELECT 1 FROM AtoA_TRANSFER_LOG
+       ) THEN
         SELECT bank_start_time, bank_close_time
         INTO v_bank_start, v_bank_close
         FROM BANK_META_DATA LIMIT 1;
@@ -580,6 +585,11 @@ BEGIN
             CALL sp_process_withdrawal(
                 v_account_one, v_agent_three, 100.00,
                 CONCAT('DEMO-WITHDRAWAL-', v_cycle), v_txn_id, v_balance
+            );
+            CALL sp_account_transfer(
+                v_account_one, v_account_two, v_agent_three, 250.00,
+                CONCAT('DEMO-TRANSFER-', v_cycle), v_txn_id,
+                v_sender_balance, v_receiver_balance
             );
             SET v_cycle = v_cycle + 1;
         END WHILE;
