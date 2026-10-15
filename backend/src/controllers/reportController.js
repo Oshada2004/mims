@@ -67,21 +67,99 @@ exports.getTransactionHistory = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Savings account not found.' });
         }
 
+        // 1. Get the total count across all transaction log types for this account
         const [[{ total }]] = await db.query(
-            'SELECT COUNT(*) AS total FROM TRANSACTION_LOG WHERE sav_acc_no = ?',
-            [accountNo]
+            `SELECT COUNT(*) AS total FROM (
+                SELECT txn_id FROM DEPOSIT_WITHDRAW_LOG WHERE sav_acc_no = ?
+                UNION ALL
+                SELECT txn_id FROM INTEREST_LOG WHERE sav_acc_no = ?
+                UNION ALL
+                SELECT txn_id FROM AtoA_TRANSFER_LOG WHERE sender_acc_no = ?
+                UNION ALL
+                SELECT txn_id FROM AtoA_TRANSFER_LOG WHERE receiver_acc_no = ?
+            ) AS combined_txns`,
+            [accountNo, accountNo, accountNo, accountNo]
         );
 
-
+        // 2. Fetch the paginated transaction history
         const [rows] = await db.query(
             `SELECT txn_id, sav_acc_no, agent_person_id, fd_id, txn_type,
                     amount, balance_after, ref_text, txn_timestamp
-             FROM TRANSACTION_LOG
-             WHERE sav_acc_no = ?
+             FROM (
+                -- Deposits, Withdrawals, FD funding & principal returns
+                SELECT 
+                    dw.txn_id,
+                    dw.sav_acc_no,
+                    dw.agent_person_id,
+                    dw.fd_id,
+                    dw.txn_type,
+                    dw.amount,
+                    dw.balance_after,
+                    dw.ref_text,
+                    tl.txn_timestamp
+                FROM DEPOSIT_WITHDRAW_LOG dw
+                JOIN TRANSACTION_LOG tl ON tl.txn_id = dw.txn_id
+                WHERE dw.sav_acc_no = ?
+
+                UNION ALL
+
+                -- Savings Interest and FD Interest credited to this account
+                SELECT 
+                    i.txn_id,
+                    i.sav_acc_no,
+                    NULL AS agent_person_id,
+                    i.fd_id,
+                    CASE 
+                        WHEN i.account_type = 'FIXED' THEN 'FD_INTEREST' 
+                        ELSE 'SAVINGS_INTEREST' 
+                    END AS txn_type,
+                    i.amount,
+                    i.balance_after,
+                    i.ref_text,
+                    tl.txn_timestamp
+                FROM INTEREST_LOG i
+                JOIN TRANSACTION_LOG tl ON tl.txn_id = i.txn_id
+                WHERE i.sav_acc_no = ?
+
+                UNION ALL
+
+                -- Transfers sent out from this account
+                SELECT 
+                    a.txn_id,
+                    a.sender_acc_no AS sav_acc_no,
+                    a.agent_person_id,
+                    NULL AS fd_id,
+                    'TRANSFER_OUT' AS txn_type,
+                    a.amount,
+                    a.sender_balance_after AS balance_after,
+                    a.ref_text,
+                    tl.txn_timestamp
+                FROM AtoA_TRANSFER_LOG a
+                JOIN TRANSACTION_LOG tl ON tl.txn_id = a.txn_id
+                WHERE a.sender_acc_no = ?
+
+                UNION ALL
+
+                -- Transfers received into this account
+                SELECT 
+                    a.txn_id,
+                    a.receiver_acc_no AS sav_acc_no,
+                    a.agent_person_id,
+                    NULL AS fd_id,
+                    'TRANSFER_IN' AS txn_type,
+                    a.amount,
+                    a.receiver_balance_after AS balance_after,
+                    a.ref_text,
+                    tl.txn_timestamp
+                FROM AtoA_TRANSFER_LOG a
+                JOIN TRANSACTION_LOG tl ON tl.txn_id = a.txn_id
+                WHERE a.receiver_acc_no = ?
+             ) AS all_txns
              ORDER BY txn_timestamp DESC, txn_id DESC
              LIMIT ? OFFSET ?`,
-            [accountNo, limit, offset]
+            [accountNo, accountNo, accountNo, accountNo, limit, offset]
         );
+
 
         return res.status(200).json({
             success: true,
