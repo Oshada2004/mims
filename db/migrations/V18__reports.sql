@@ -5,20 +5,19 @@ SELECT
     DATE_FORMAT(t.txn_timestamp, '%Y-%m') AS year_month_label,
     DATE_FORMAT(t.txn_timestamp, '%M %Y') AS month_year_name,
     sa.plan_code,
+    sap.plan_name AS plan_name,
     sap.plan_name AS account_type,
-    COUNT(DISTINCT COALESCE(i.sav_acc_no, f.acc_no)) AS accounts_receiving_interest,
+    COUNT(DISTINCT i.sav_acc_no) AS accounts_receiving_interest,
     COUNT(i.txn_id) AS total_interest_payouts,
     COALESCE(SUM(CASE WHEN i.account_type = 'SAVINGS' THEN i.amount ELSE 0.00 END), 0.00) AS total_savings_interest,
-    COALESCE(SUM(CASE WHEN i.account_type = 'FIXED'   THEN i.amount ELSE 0.00 END), 0.00) AS total_fd_interest,
+    COALESCE(SUM(CASE WHEN i.account_type = 'FIXED' THEN i.amount ELSE 0.00 END), 0.00) AS total_fd_interest,
     COALESCE(SUM(i.amount), 0.00) AS total_interest_paid
 FROM INTEREST_LOG i
-JOIN TRANSACTION_LOG t 
+JOIN TRANSACTION_LOG t
     ON t.txn_id = i.txn_id
-LEFT JOIN FIXED_DEPOSIT f 
-    ON f.fd_id = i.fd_id AND i.account_type = 'FIXED'
-JOIN SAVINGS_ACCOUNT sa 
-    ON sa.account_no = COALESCE(i.sav_acc_no, f.acc_no)
-JOIN SAV_ACC_PLAN sap 
+JOIN SAVINGS_ACCOUNT sa
+    ON sa.account_no = i.sav_acc_no
+JOIN SAV_ACC_PLAN sap
     ON sa.plan_code = sap.plan_code
 GROUP BY
     YEAR(t.txn_timestamp),
@@ -45,6 +44,7 @@ BEGIN
         year_month_label,
         month_year_name,
         plan_code,
+        plan_name,
         account_type,
         accounts_receiving_interest,
         total_interest_payouts,
@@ -62,31 +62,41 @@ BEGIN
 END$$
 
 
-
 DROP PROCEDURE IF EXISTS GetAgentTransactionSummary$$
 
 CREATE PROCEDURE GetAgentTransactionSummary()
+READS SQL DATA
 BEGIN
     SELECT 
         p.person_id AS agent_id,
         p.first_name,
         p.last_name,
+        CONCAT(p.first_name, ' ', p.last_name) AS agent_name,
+        COALESCE(b.branch_name, 'N/A') AS branch_name,
         COUNT(t.txn_id) AS total_transactions,
-        SUM(t.amount) AS total_value
+        COALESCE(SUM(t.amount), 0.00) AS total_value,
+        COALESCE(SUM(t.amount), 0.00) AS gross_value_lkr,
+        COALESCE(SUM(CASE 
+            WHEN t.kind = 'WITHDRAWAL' THEN -t.amount 
+            ELSE t.amount 
+        END), 0.00) AS net_value_lkr
     FROM PERSON p
+    LEFT JOIN STAFF_PROFILE sp ON sp.person_id = p.person_id
+    LEFT JOIN BRANCH b ON b.branch_id = sp.branch_id
     JOIN (
-        SELECT txn_id, agent_person_id, amount 
+        SELECT txn_id, agent_person_id, txn_type AS kind, amount 
         FROM DEPOSIT_WITHDRAW_LOG 
         WHERE agent_person_id IS NOT NULL
         UNION ALL
-        SELECT txn_id, agent_person_id, amount 
+        SELECT txn_id, agent_person_id, 'TRANSFER' AS kind, amount 
         FROM AtoA_TRANSFER_LOG 
         WHERE agent_person_id IS NOT NULL
     ) t ON p.person_id = t.agent_person_id
     GROUP BY 
         p.person_id, 
         p.first_name, 
-        p.last_name
+        p.last_name,
+        b.branch_name
     ORDER BY 
         total_value DESC;
 END$$
@@ -108,13 +118,20 @@ BEGIN
     SELECT
         sa.account_no,
         sa.plan_code,
+        sap.plan_name,
+        COALESCE(h.holder_names, 'N/A') AS holder_names,
         sa.status,
+        sa.status AS account_status,
+        sa.opened_date,
+        COALESCE(MAX(DATE(m.ts)), sa.last_txn_date) AS last_transaction_date,
         sa.balance AS current_balance,
         COUNT(m.kind) AS txn_count,
+        COUNT(m.kind) AS transaction_count,
         COALESCE(SUM(CASE WHEN m.kind = 'DEPOSIT'      THEN m.amount END), 0) AS total_deposits,
         COALESCE(SUM(CASE WHEN m.kind = 'WITHDRAWAL'   THEN m.amount END), 0) AS total_withdrawals,
         COALESCE(SUM(CASE WHEN m.kind = 'INTEREST'     THEN m.amount END), 0) AS total_savings_interest,
         COALESCE(SUM(CASE WHEN m.kind = 'FD_INTEREST'  THEN m.amount END), 0) AS total_fd_interest,
+        COALESCE(SUM(CASE WHEN m.kind IN ('INTEREST', 'FD_INTEREST') THEN m.amount END), 0) AS total_interest_credited,
         COALESCE(SUM(CASE WHEN m.kind = 'TRANSFER_IN'  THEN m.amount END), 0) AS total_transfers_in,
         COALESCE(SUM(CASE WHEN m.kind = 'TRANSFER_OUT' THEN m.amount END), 0) AS total_transfers_out,
         COALESCE(SUM(CASE WHEN m.kind IN ('DEPOSIT','INTEREST','FD_INTEREST','TRANSFER_IN')
@@ -122,6 +139,26 @@ BEGIN
                           WHEN m.kind IN ('WITHDRAWAL','TRANSFER_OUT')
                           THEN -m.amount END), 0) AS net_change
     FROM SAVINGS_ACCOUNT sa
+    JOIN SAV_ACC_PLAN sap
+        ON sa.plan_code = sap.plan_code
+    LEFT JOIN (
+        SELECT 
+            ah.account_no,
+            GROUP_CONCAT(
+                CONCAT(p.first_name, ' ', p.last_name)
+                ORDER BY 
+                    CASE ah.holder_role 
+                        WHEN 'PRIMARY' THEN 1 
+                        WHEN 'JOINT' THEN 2 
+                        ELSE 3 
+                    END, 
+                    p.person_id 
+                SEPARATOR ', '
+            ) AS holder_names
+        FROM ACCOUNT_HOLDER ah
+        JOIN PERSON p ON ah.customer_person_id = p.person_id
+        GROUP BY ah.account_no
+    ) h ON sa.account_no = h.account_no
     LEFT JOIN (
         SELECT d.sav_acc_no AS acc, d.txn_type AS kind, d.amount, t.txn_timestamp AS ts
         FROM DEPOSIT_WITHDRAW_LOG d
@@ -134,10 +171,10 @@ BEGIN
         WHERE i.account_type = 'SAVINGS'
 
         UNION ALL
-        SELECT f.acc_no, 'FD_INTEREST', i.amount, t.txn_timestamp
+        SELECT COALESCE(i.sav_acc_no, f.acc_no), 'FD_INTEREST', i.amount, t.txn_timestamp
         FROM INTEREST_LOG i
         JOIN TRANSACTION_LOG t ON t.txn_id = i.txn_id
-        JOIN FIXED_DEPOSIT f   ON f.fd_id = i.fd_id
+        LEFT JOIN FIXED_DEPOSIT f ON f.fd_id = i.fd_id
         WHERE i.account_type = 'FIXED'
 
         UNION ALL
@@ -154,7 +191,15 @@ BEGIN
      AND (p_from_date IS NULL OR m.ts >= p_from_date)
      AND (p_to_date   IS NULL OR m.ts <  p_to_date + INTERVAL 1 DAY)
     WHERE p_account_no IS NULL OR sa.account_no = p_account_no
-    GROUP BY sa.account_no, sa.plan_code, sa.status, sa.balance
+    GROUP BY 
+        sa.account_no, 
+        sa.plan_code, 
+        sap.plan_name, 
+        h.holder_names, 
+        sa.status, 
+        sa.opened_date, 
+        sa.last_txn_date, 
+        sa.balance
     ORDER BY sa.account_no;
 END$$
 
