@@ -200,3 +200,8 @@ table {
 .text-muted {
   color: var(--color-text-muted);
 }
+[data-theme="dark"] { color-scheme:dark; --color-bg:#111827; --color-surface:#1f2937; --color-surface-muted:#182231; --color-text:#f3f4f6; --color-text-muted:#a8b2c2; --color-text-inverse:#111827; --color-border:#374151; --color-border-strong:#4b5563; --color-accent:#fb923c; --color-accent-hover:#fdba74; --color-accent-light:#3b2b20; --color-success:#4ade80; --color-success-light:#123322; --color-warning:#fbbf24; --color-warning-light:#3a2d12; --color-danger:#f87171; --color-danger-hover:#fca5a5; --color-danger-light:#3b1f25; --color-info:#e5e7eb; --color-info-light:#1f2937; --color-overlay:rgba(0,0,0,.65); }
+[data-theme="dark"] body { background:var(--color-bg); color:var(--color-text); }
+[data-theme="dark"] ::selection { color:var(--color-text); }
+[data-density="compact"] { --space-1:.2rem; --space-2:.35rem; --space-3:.55rem; --space-4:.75rem; --space-5:1rem; --space-6:1.2rem; --control-height-md:36px; --control-height-lg:42px; }
+[data-reduced-motion="true"] *,[data-reduced-motion="true"] *::before,[data-reduced-motion="true"] *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.01ms !important; }
