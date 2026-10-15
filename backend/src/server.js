@@ -2,6 +2,15 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+// Fail fast on missing security configuration instead of failing on the first transfer.
+const { assertOtpConfig } = require('./utils/otp');
+try {
+  assertOtpConfig();
+} catch (error) {
+  console.error(`Startup aborted: ${error.message}`);
+  process.exit(1);
+}
+
 const authRoutes = require('./routes/authRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const accountRoutes = require('./routes/accountRoutes');

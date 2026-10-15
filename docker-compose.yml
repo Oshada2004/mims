@@ -35,6 +35,15 @@ services:
       database:
         condition: service_healthy
 
+  # Local email catcher for OTP codes: SMTP on mailpit:1025 inside the network,
+  # inbox at http://localhost:8025. Nothing is delivered to real addresses.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mims_mailpit
+    restart: always
+    ports:
+      - "8025:8025"
+
   backend:
     build: ./backend
     container_name: mims_backend
@@ -61,6 +70,8 @@ services:
     depends_on:
       flyway:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_started
 
 
   frontend:
