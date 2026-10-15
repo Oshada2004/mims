@@ -15,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatPercent } from '../../utils/format';
 import { ageInYears, isValidAmount } from '../../utils/validation';
 import CustomerPicker from './CustomerPicker';
+import ManageJointHolders from './ManageJointHolders';
 import '../Pages.css';
 
 function ageRange(plan) {
@@ -151,7 +152,7 @@ export default function OpenAccount() {
                 </p>
               )}
               {plan?.allowsJoint && (
-                <Alert>Joint holders are added to the account after it is opened.</Alert>
+                <Alert>After opening the account, use the joint-holder section below to add another adult customer.</Alert>
               )}
               {plan && ['CHILD', 'TEEN'].includes(plan.code) && (
                 <Alert>Child and teen accounts require the customer to have a linked guardian.</Alert>
@@ -188,6 +189,7 @@ export default function OpenAccount() {
           </Button>
         </div>
       </form>
+      <ManageJointHolders key={opened?.accountNo || 'existing'} defaultAccountNo={opened?.accountNo} plans={plans} />
     </div>
   );
 }
