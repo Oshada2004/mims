@@ -43,10 +43,13 @@ export async function getActiveFds(dueBy, { signal } = {}) {
 }
 
 
-export async function getAccountSummary({ planCode, status } = {}, { signal } = {}) {
+export async function getAccountSummary({ planCode, status, accountNo, fromDate, toDate } = {}, { signal } = {}) {
     const params = {};
     if (planCode) params.plan_code = planCode;
     if (status) params.status = status;
+    if (accountNo) params.account_no = accountNo;
+    if (fromDate) params.from_date = fromDate;
+    if (toDate) params.to_date = toDate;
     const { data } = await client.get(endpoints.reports.accountSummary, { params, signal });
     return rows(data).map((row) => ({
         accountNo: row.account_no,
