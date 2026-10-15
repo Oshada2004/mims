@@ -25,11 +25,11 @@ END$$
 
 DELIMITER ;
 
-CALL sp_tmp_add_index('TRANSACTION_LOG', 'idx_txn_acc_time',
-                      'sav_acc_no, txn_timestamp');
+CALL sp_tmp_add_index('DEPOSIT_WITHDRAW_LOG', 'idx_txn_acc_time',
+                      'sav_acc_no, txn_id');
 
-CALL sp_tmp_add_index('TRANSACTION_LOG', 'idx_txn_agent_time',
-                      'agent_person_id, txn_timestamp');
+CALL sp_tmp_add_index('DEPOSIT_WITHDRAW_LOG', 'idx_txn_agent_time',
+                      'agent_person_id, txn_id');
 
 CALL sp_tmp_add_index('TRANSACTION_LOG', 'idx_txn_type_time',
                       'txn_type, txn_timestamp');
@@ -51,13 +51,14 @@ RETURNS DECIMAL(14,2)
 READS SQL DATA
 BEGIN
     DECLARE v_total DECIMAL(14,2);
-    SELECT COALESCE(SUM(amount), 0.00) INTO v_total
-    FROM TRANSACTION_LOG
-    WHERE sav_acc_no = p_account_no
-      AND txn_type = 'WITHDRAWAL'
-      AND txn_timestamp >= CURDATE()
-      AND txn_timestamp <  CURDATE() + INTERVAL 1 DAY
-      AND agent_person_id IS NOT NULL;
+    SELECT COALESCE(SUM(dw.amount), 0.00) INTO v_total
+    FROM DEPOSIT_WITHDRAW_LOG dw
+    JOIN TRANSACTION_LOG tl ON tl.txn_id = dw.txn_id
+    WHERE dw.sav_acc_no = p_account_no
+      AND dw.txn_type = 'WITHDRAWAL'
+      AND tl.txn_timestamp >= CURDATE()
+      AND tl.txn_timestamp <  CURDATE() + INTERVAL 1 DAY
+      AND dw.agent_person_id IS NOT NULL;
     RETURN v_total;
 END$$
 
