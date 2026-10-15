@@ -85,11 +85,19 @@ BEGIN
         END IF;
 
         
-        INSERT INTO TRANSACTION_LOG (
-            sav_acc_no, agent_person_id, fd_id, txn_type, amount, balance_after, ref_text, txn_timestamp
-        ) VALUES (
-            p_account_no, p_agent_person_id, NULL, 'DEPOSIT', p_initial_deposit, p_initial_deposit, 'Initial Opening Deposit', NOW()
-        );
+        -- Opening deposit: parent row in TRANSACTION_LOG, details in DEPOSIT_WITHDRAW_LOG.
+        -- Skipped for a zero deposit (allowed by plans with no minimum; the log requires amount > 0).
+        IF p_initial_deposit > 0 THEN
+            INSERT INTO TRANSACTION_LOG (txn_type, txn_timestamp)
+            VALUES ('DEPOSIT_WITHDRAWAL', NOW());
+
+            INSERT INTO DEPOSIT_WITHDRAW_LOG (
+                txn_id, txn_type, agent_person_id, sav_acc_no, fd_id, amount, balance_after, ref_text
+            ) VALUES (
+                LAST_INSERT_ID(), 'DEPOSIT', p_agent_person_id, p_account_no, NULL,
+                p_initial_deposit, p_initial_deposit, 'Initial Opening Deposit'
+            );
+        END IF;
 
     COMMIT;
 END$$

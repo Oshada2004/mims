@@ -159,7 +159,7 @@ BEGIN
          SHA2('SahanCustomer123!', 256), 'CUSTOMER', 0, FALSE),
         (v_teen, 'nadeesha.perera@gmail.com', 'nadeesha_perera',
          SHA2('NadeeshaCustomer123!', 256), 'CUSTOMER', 0, FALSE),
-        (v_adult, 'dilan.wickramasinghe@gmail.com', 'dilan_w',
+        (v_adult, 'thisathsenindu@gmail.com', 'dilan_w',
          SHA2('DilanCustomer123!', 256), 'CUSTOMER', 0, FALSE),
         (v_senior, 'sunil.silva@gmail.com', 'sunil_silva',
          SHA2('SunilCustomer123!', 256), 'CUSTOMER', 0, FALSE),

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Alert from '../../components/ui/Alert';
 import Card from '../../components/ui/Card';
@@ -11,12 +12,14 @@ import { getCustomerAccounts } from '../../api/services/customerService';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/format';
 import TransactionHistory from '../shared/TransactionHistory';
+import TransferMoney from './TransferMoney';
 import '../Pages.css';
 
 export default function CustomerTransactions() {
     const { user } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const accounts = useApi((signal) => getCustomerAccounts(user.person_id, { signal }), [user.person_id]);
+    const [historyKey, setHistoryKey] = useState(0);
 
     const rows = accounts.data ?? [];
     // Default to the first account; the backend still checks the account belongs to this customer.
@@ -25,10 +28,11 @@ export default function CustomerTransactions() {
 
     return (
         <div className="page">
-            <PageHeader title="Transactions" description="The history of your savings accounts, newest first." />
+            <PageHeader title="Transactions" description="Send money to another account and review your history." />
 
             <Alert>
-                Deposits and withdrawals are made through your agent at the branch. This page shows your history only.
+                Transfers are confirmed with a code sent to your email. Deposits and withdrawals are made through your
+                agent at the branch.
             </Alert>
 
             {accounts.error && (
@@ -36,6 +40,23 @@ export default function CustomerTransactions() {
                     {accounts.error}
                 </Alert>
             )}
+
+            <Card title="Send money" description="Transfer to any active account. Your daily limit is set by the bank.">
+                {accounts.loading && !accounts.data && <Spinner label="Loading your accounts" />}
+                {accounts.data && rows.length === 0 && (
+                    <EmptyState title="No accounts yet" message="Visit your agent to open a savings account." compact />
+                )}
+                {rows.length > 0 && (
+                    <TransferMoney
+                        accounts={rows}
+                        onCompleted={() => {
+                            // New balances on the accounts list and the history table.
+                            accounts.refetch();
+                            setHistoryKey((key) => key + 1);
+                        }}
+                    />
+                )}
+            </Card>
 
             <Card
                 title="Account history"
@@ -63,7 +84,7 @@ export default function CustomerTransactions() {
                                 />
                             </FormField>
                         </div>
-                        <TransactionHistory accountNo={selected} />
+                        <TransactionHistory accountNo={selected} refreshKey={historyKey} />
                     </div>
                 )}
             </Card>

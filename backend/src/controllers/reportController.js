@@ -72,21 +72,49 @@ exports.getTransactionHistory = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Savings account not found.' });
         }
 
+        // TRANSACTION_LOG only holds txn_id, type and time; the per-account details live in the
+        // detail tables. Each movement of this account becomes one row, seen from this account:
+        // a transfer is TRANSFER_OUT for the sender and TRANSFER_IN for the receiver.
+        const movements = `
+            SELECT dw.txn_id, dw.txn_type,
+                   CASE WHEN dw.txn_type IN ('WITHDRAWAL', 'FD_FUNDING') THEN 'DEBIT' ELSE 'CREDIT' END AS direction,
+                   dw.agent_person_id, dw.fd_id, dw.amount, dw.balance_after, dw.ref_text,
+                   NULL AS counterparty_acc_no
+              FROM DEPOSIT_WITHDRAW_LOG dw
+             WHERE dw.sav_acc_no = ?
+            UNION ALL
+            SELECT il.txn_id,
+                   CASE WHEN il.account_type = 'FIXED' THEN 'FD_INTEREST' ELSE 'SAVINGS_INTEREST' END,
+                   'CREDIT', NULL, il.fd_id, il.amount, il.balance_after, il.ref_text, NULL
+              FROM INTEREST_LOG il
+             WHERE il.sav_acc_no = ?
+            UNION ALL
+            SELECT a.txn_id, 'TRANSFER_OUT', 'DEBIT', a.agent_person_id, NULL, a.amount,
+                   a.sender_balance_after, a.ref_text, a.receiver_acc_no
+              FROM AtoA_TRANSFER_LOG a
+             WHERE a.sender_acc_no = ?
+            UNION ALL
+            SELECT a.txn_id, 'TRANSFER_IN', 'CREDIT', a.agent_person_id, NULL, a.amount,
+                   a.receiver_balance_after, a.ref_text, a.sender_acc_no
+              FROM AtoA_TRANSFER_LOG a
+             WHERE a.receiver_acc_no = ?`;
+        const movementParams = [accountNo, accountNo, accountNo, accountNo];
+
         const [[{ total }]] = await db.query(
-            'SELECT COUNT(*) AS total FROM TRANSACTION_LOG WHERE sav_acc_no = ?',
-            [accountNo]
+            `SELECT COUNT(*) AS total FROM (${movements}) m`,
+            movementParams
         );
 
         // txn_id is used as a tie breaker because several transactions can share
         // the same timestamp, and we always want them in the order they happened.
         const [rows] = await db.query(
-            `SELECT txn_id, sav_acc_no, agent_person_id, fd_id, txn_type,
-                    amount, balance_after, ref_text, txn_timestamp
-             FROM TRANSACTION_LOG
-             WHERE sav_acc_no = ?
-             ORDER BY txn_timestamp DESC, txn_id DESC
-             LIMIT ? OFFSET ?`,
-            [accountNo, limit, offset]
+            `SELECT m.txn_id, ? AS sav_acc_no, m.agent_person_id, m.fd_id, m.txn_type, m.direction,
+                    m.amount, m.balance_after, m.ref_text, m.counterparty_acc_no, t.txn_timestamp
+               FROM (${movements}) m
+               JOIN TRANSACTION_LOG t ON t.txn_id = m.txn_id
+              ORDER BY t.txn_timestamp DESC, m.txn_id DESC
+              LIMIT ? OFFSET ?`,
+            [accountNo, ...movementParams, limit, offset]
         );
 
         return res.status(200).json({

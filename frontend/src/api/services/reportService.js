@@ -15,7 +15,11 @@ export async function getTransactionHistory(accountNo, { limit, offset } = {}, {
         accountNo: row.sav_acc_no,
         agentPersonId: row.agent_person_id,
         fdId: row.fd_id,
-        type: row.txn_type, // e.g. 'DEPOSIT', 'WITHDRAWAL', interest types
+        // DEPOSIT, WITHDRAWAL, FD_FUNDING, FD_PRINCIPAL_RETURN, SAVINGS_INTEREST, FD_INTEREST,
+        // TRANSFER_IN or TRANSFER_OUT (from this account's point of view).
+        type: row.txn_type,
+        direction: row.direction, // 'CREDIT' | 'DEBIT'
+        counterpartyAccountNo: row.counterparty_acc_no ?? null, // the other account of a transfer
         amount: toNumber(row.amount),
         balanceAfter: toNumber(row.balance_after),
         reference: row.ref_text,

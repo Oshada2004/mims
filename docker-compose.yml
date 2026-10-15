@@ -3,7 +3,9 @@ services:
     image: mysql:8.0
     container_name: mims_db
     restart: always
-    command: --log-bin-trust-function-creators=1
+    # Run MySQL on bank time (Sri Lanka, UTC+05:30) so CURDATE()/NOW()/CURRENT_TIME() match banking hours.
+    # Must match BANK_TIMEZONE used by the backend (backend/src/config/timezone.js).
+    command: --log-bin-trust-function-creators=1 --default-time-zone=${BANK_TIMEZONE:-+05:30}
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}

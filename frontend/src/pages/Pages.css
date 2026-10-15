@@ -270,3 +270,8 @@ a.btn:hover {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.inline-icon {
+  display: inline-block;
+  vertical-align: -2px;
+  color: var(--color-success);
+}

@@ -5,7 +5,7 @@ import Pagination from '../../components/ui/Pagination';
 import Table from '../../components/ui/Table';
 import { useApi } from '../../api/useApi';
 import { getTransactionHistory } from '../../api/services/reportService';
-import { DEBIT_TYPES, TXN_BADGE } from '../../constants/status';
+import { DEBIT_TYPES, TXN_BADGE, TXN_LABELS } from '../../constants/status';
 import { formatCurrency, formatDateTime, formatLabel } from '../../utils/format';
 import '../Pages.css';
 
@@ -17,15 +17,27 @@ const COLUMNS = [
   {
     key: 'type',
     header: 'Type',
-    render: (row) => <Badge variant={TXN_BADGE[row.type] ?? 'neutral'}>{formatLabel(row.type)}</Badge>,
+    render: (row) => (
+      <Badge variant={TXN_BADGE[row.type] ?? 'neutral'}>{TXN_LABELS[row.type] ?? formatLabel(row.type)}</Badge>
+    ),
   },
-  { key: 'reference', header: 'Reference', render: (row) => row.reference || '—' },
+  {
+    key: 'reference',
+    header: 'Reference',
+    render: (row) => {
+      // Transfers also show the other account: "to SA…" for money out, "from SA…" for money in.
+      const counterparty = row.counterpartyAccountNo
+        ? `${row.type === 'TRANSFER_OUT' ? 'to' : 'from'} ${row.counterpartyAccountNo}`
+        : null;
+      return [row.reference, counterparty].filter(Boolean).join(' · ') || '—';
+    },
+  },
   {
     key: 'amount',
     header: 'Amount',
     align: 'right',
     render: (row) => {
-      const debit = DEBIT_TYPES.includes(row.type);
+      const debit = row.direction ? row.direction === 'DEBIT' : DEBIT_TYPES.includes(row.type);
       return (
         <span className={debit ? 'amount--debit' : 'amount--credit'}>
           {debit ? '−' : '+'}

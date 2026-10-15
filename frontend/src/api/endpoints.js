@@ -47,6 +47,13 @@ export const endpoints = {
   staff: {
     root: '/staff', 
   },
+  transfers: {
+    // Customer-only. The initiating customer is always taken from the session.
+    recipient: (accountNo) => `/transfers/recipient/${segment(accountNo)}`,
+    initiate: '/transfers/initiate',
+    resend: '/transfers/resend',
+    confirm: '/transfers/confirm',
+  },
   jobs: {
     
     savingsInterest: '/jobs/interest/savings',

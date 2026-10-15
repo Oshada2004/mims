@@ -96,6 +96,8 @@ async function cancelChallenge(challengeId, personId) {
 async function readChallenge(challengeId, personId) {
     const [rows] = await db.query(
         `SELECT expires_at,
+                -- Remaining lifetime computed by MySQL, so clients never depend on clock or time zone settings.
+                GREATEST(TIMESTAMPDIFF(SECOND, NOW(), expires_at), 0) AS expires_in_seconds,
                 JSON_VALUE(payload, '$.sender') AS sender,
                 JSON_VALUE(payload, '$.receiver') AS receiver,
                 JSON_VALUE(payload, '$.amount') AS amount
@@ -222,7 +224,8 @@ exports.initiate = async (req, res, next) => {
             data: {
                 challengeId,
                 maskedEmail: maskEmail(req.user.email),
-                expiresAt: challenge.expires_at
+                expiresAt: challenge.expires_at,
+                expiresInSeconds: challenge.expires_in_seconds
             }
         });
     } catch (err) {
@@ -272,7 +275,8 @@ exports.resend = async (req, res, next) => {
             data: {
                 challengeId,
                 maskedEmail: maskEmail(req.user.email),
-                expiresAt: challenge.expires_at
+                expiresAt: challenge.expires_at,
+                expiresInSeconds: challenge.expires_in_seconds
             }
         });
     } catch (err) {

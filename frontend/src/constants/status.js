@@ -11,8 +11,25 @@ export const STATUS_BADGE = {
 export const TXN_BADGE = {
     DEPOSIT: 'success',
     WITHDRAWAL: 'accent',
+    FD_FUNDING: 'neutral',
+    FD_PRINCIPAL_RETURN: 'neutral',
     SAVINGS_INTEREST: 'neutral',
     FD_INTEREST: 'neutral',
+    TRANSFER_IN: 'success',
+    TRANSFER_OUT: 'accent',
 };
 
-export const DEBIT_TYPES = ['WITHDRAWAL'];
+// How each transaction type is shown in history tables.
+export const TXN_LABELS = {
+    DEPOSIT: 'Deposit',
+    WITHDRAWAL: 'Withdrawal',
+    FD_FUNDING: 'FD funding',
+    FD_PRINCIPAL_RETURN: 'FD principal returned',
+    SAVINGS_INTEREST: 'Savings interest',
+    FD_INTEREST: 'FD interest',
+    TRANSFER_IN: 'Transfer in',
+    TRANSFER_OUT: 'Transfer out',
+};
+
+// Fallback when a row has no direction from the API: types that reduce the savings balance.
+export const DEBIT_TYPES = ['WITHDRAWAL', 'FD_FUNDING', 'TRANSFER_OUT'];
