@@ -1,20 +1,17 @@
 const db = require('../config/db');
 
-// Checks the text is a real date in form , Y-M-D.
 function isValidDate(text) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
     const date = new Date(text + 'T00:00:00Z');
     return !isNaN(date) && date.toISOString().slice(0, 10) === text;
 }
 
-// Reads a whole number from the query string, or uses the default if it's missing.
 function readWholeNumber(value, defaultValue) {
     if (value === undefined) return defaultValue;
     return /^\d+$/.test(value) ? Number(value) : NaN;
 }
 
-// Report - active fixed deposits and when their next payout is due.
-// Optional filter to only show payouts due on or before that date.
+
 exports.getActiveFDReport = async (req, res, next) => {
     const { due_by } = req.query;
 
@@ -42,8 +39,7 @@ exports.getActiveFDReport = async (req, res, next) => {
     }
 };
 
-// Report: transaction history for one savings account, newest first.
-// Optional paging, limit can be at most 200
+
 exports.getTransactionHistory = async (req, res, next) => {
     const accountNo = (req.params.accountNo || '').trim();
     const limit = readWholeNumber(req.query.limit, 50);
@@ -63,7 +59,6 @@ exports.getTransactionHistory = async (req, res, next) => {
     }
 
     try {
-        // Make sure the account exists, so a wrong number gives 404 instead of an empty list.
         const [accounts] = await db.query(
             'SELECT account_no FROM SAVINGS_ACCOUNT WHERE account_no = ?',
             [accountNo]
@@ -77,8 +72,7 @@ exports.getTransactionHistory = async (req, res, next) => {
             [accountNo]
         );
 
-        // txn_id is used as a tie breaker because several transactions can share
-        // the same timestamp, and we always want them in the order they happened.
+
         const [rows] = await db.query(
             `SELECT txn_id, sav_acc_no, agent_person_id, fd_id, txn_type,
                     amount, balance_after, ref_text, txn_timestamp
@@ -103,43 +97,7 @@ exports.getTransactionHistory = async (req, res, next) => {
     }
 };
 
-// Report 2: Account-wise transaction summary and current balance
-exports.getAgentTransactionsReport = async (req, res, next) => {
-    const { start_date, end_date } = req.query;
-    if (!start_date || !isValidDate(start_date)) {
-        return res.status(400).json({
-            success: false,
-            message: 'start_date is required and must be in YYYY-MM-DD format.'
-        });
-    }
-    if (!end_date || !isValidDate(end_date)) {
-        return res.status(400).json({
-            success: false,
-            message: 'end_date is required and must be in YYYY-MM-DD format.'
-        });
-    }
-    if (new Date(start_date) > new Date(end_date)) {
-        return res.status(400).json({
-            success: false,
-            message: 'start_date cannot be after end_date.'
-        });
-    }
-    try {
-        const [results] = await db.query(
-            'CALL sp_agent_transactions_report(?, ?)',
-            [start_date, end_date]
-        );
-        const rows = results[0];
-        return res.status(200).json({
-            success: true,
-            count: rows.length,
-            data: rows
-        });
-    } catch (err) {
-        next(err);
-    }
-};
-// 2. Procedure: sp_get_customer_activity_report(IN p_customer_id INT, IN p_start_date DATE, IN p_end_date DATE)
+
 exports.getCustomerActivityReport = async (req, res, next) => {
     const { customer_id } = req.params;
     const { start_date, end_date } = req.query;
@@ -203,39 +161,8 @@ exports.getCustomerActivityReport = async (req, res, next) => {
         next(err);
     }
 };
-// 3. Procedure: sp_get_account_transaction_summary(IN p_plan_code VARCHAR(10), IN p_account_status VARCHAR(10))
-exports.getAccountTransactionSummaryReport = async (req, res, next) => {
-    const { plan_code, status } = req.query;
-    const allowedPlans = ['CHILD', 'TEEN', 'ADULT', 'SENIOR', 'JOINT'];
-    const allowedStatuses = ['ACTIVE', 'DORMANT', 'CLOSED'];
-    if (plan_code && !allowedPlans.includes(plan_code.toUpperCase())) {
-        return res.status(400).json({
-            success: false,
-            message: `Invalid plan_code. Allowed values: ${allowedPlans.join(', ')}`
-        });
-    }
-    if (status && !allowedStatuses.includes(status.toUpperCase())) {
-        return res.status(400).json({
-            success: false,
-            message: `Invalid status. Allowed values: ${allowedStatuses.join(', ')}`
-        });
-    }
-    try {
-        const [results] = await db.query(
-            'CALL sp_get_account_transaction_summary(?, ?)',
-            [plan_code ? plan_code.toUpperCase() : null, status ? status.toUpperCase() : null]
-        );
-        const rows = results[0];
-        return res.status(200).json({
-            success: true,
-            count: rows.length,
-            data: rows
-        });
-    } catch (err) {
-        next(err);
-    }
-};
-// 4. Procedure: sp_get_monthly_interest_distribution(IN p_year INT, IN p_month INT, IN p_plan_code VARCHAR(10))
+
+
 exports.getMonthlyInterestDistributionReport = async (req, res, next) => {
     const { year, month, plan_code } = req.query;
     let parsedYear = null;
@@ -277,6 +204,91 @@ exports.getMonthlyInterestDistributionReport = async (req, res, next) => {
             data: rows
         });
     } catch (err) {
+        next(err);
+    }
+};
+
+
+
+exports.getAgentTransactionSummaryReport = async (req, res, next) => {
+    try {
+        const [results] = await db.query('CALL GetAgentTransactionSummary()');
+        const rows = results[0] || [];
+
+        return res.status(200).json({
+            success: true,
+            count: rows.length,
+            data: rows
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+
+
+exports.getAccountTransactionSummaryReport = async (req, res, next) => {
+    const { account_no, from_date, to_date } = req.query;
+
+    // Validate account_no if provided
+    if (account_no !== undefined) {
+        const trimmedAcc = String(account_no).trim();
+        if (trimmedAcc === '' || trimmedAcc.length > 15) {
+            return res.status(400).json({
+                success: false,
+                message: 'account_no must be a non-empty string of up to 15 characters.'
+            });
+        }
+    }
+
+    // Validate date format (YYYY-MM-DD)
+    if (from_date !== undefined && !isValidDate(from_date)) {
+        return res.status(400).json({
+            success: false,
+            message: 'from_date must be a valid date in YYYY-MM-DD format.'
+        });
+    }
+
+    if (to_date !== undefined && !isValidDate(to_date)) {
+        return res.status(400).json({
+            success: false,
+            message: 'to_date must be a valid date in YYYY-MM-DD format.'
+        });
+    }
+
+    // Validate date range
+    if (from_date && to_date && new Date(from_date) > new Date(to_date)) {
+        return res.status(400).json({
+            success: false,
+            message: 'from_date cannot be after to_date.'
+        });
+    }
+
+    try {
+        const [results] = await db.query(
+            'CALL sp_account_transaction_summary(?, ?, ?)',
+            [
+                account_no ? String(account_no).trim() : null,
+                from_date || null,
+                to_date || null
+            ]
+        );
+
+        const rows = results[0] || [];
+
+        return res.status(200).json({
+            success: true,
+            count: rows.length,
+            data: rows
+        });
+    } catch (err) {
+        if (err.sqlState === '45000') {
+            const isNotFound = err.sqlMessage && err.sqlMessage.toLowerCase().includes('not found');
+            return res.status(isNotFound ? 404 : 400).json({
+                success: false,
+                message: err.sqlMessage || err.message
+            });
+        }
         next(err);
     }
 };

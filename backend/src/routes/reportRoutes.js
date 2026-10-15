@@ -16,7 +16,7 @@ router.get('/active-fds', authorizeRoles(...REPORT_ROLES), reportController.getA
 router.get('/transactions/:accountNo', requireAccountAccess(...REPORT_ROLES), reportController.getTransactionHistory);
 router.get('/account-summary', authorizeRoles(...REPORT_ROLES), reportController.getAccountTransactionSummaryReport);
 router.get('/interest-distribution', authorizeRoles(...REPORT_ROLES), reportController.getMonthlyInterestDistributionReport);
-router.get('/agent-transactions', authorizeRoles(...REPORT_ROLES), reportController.getAgentTransactionsReport);
 router.get('/customer-activity/:customer_id', authorizeRoles(...REPORT_ROLES), reportController.getCustomerActivityReport);
+router.get('/agent-transactions', authorizeRoles(...REPORT_ROLES), reportController.getAgentTransactionSummaryReport);
 
 module.exports = router;
