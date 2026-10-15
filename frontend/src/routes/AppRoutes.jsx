@@ -23,6 +23,7 @@ import Profile from '../pages/shared/Profile';
 import Settings from '../pages/shared/Settings';
 import NotFound from '../pages/shared/NotFound';
 import Unauthorized from '../pages/shared/Unauthorized';
+import AdminReports from '../pages/admin/AdminReports';
 
 export default function AppRoutes() {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ export default function AppRoutes() {
           <Route path="banks" element={<BankManagement />} />
           <Route path="agents" element={<AgentManagement />} />
           <Route path="customers" element={<CustomerManagement />} />
+          <Route path="reports" element={<AdminReports />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
         </Route>
